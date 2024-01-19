@@ -9,10 +9,10 @@
   "assetFiles": [
     {
       "pathOnDisk": "art/animation.gif",
-      "targetPath": "art/animation.gif",
+      "targetPath": "art/animation.gif"
     }
   ],
   "overview": "README.md",
   "publisher": "MadsKristensen",
-  "repo": "https://github.com/MadsKristensen/WorkflowFiles"
+  "repo": "https://github.com/madskristensen/WorkspaceFiles"
 }
