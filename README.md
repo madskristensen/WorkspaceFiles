@@ -4,7 +4,7 @@
 
 # Workspace Files for Visual Studio
 
-<!--[![Build](https://github.com/madskristensen/DocumentMargin/actions/workflows/build.yaml/badge.svg)](https://github.com/madskristensen/DocumentMargin/actions/workflows/build.yaml)-->
+[![Build](https://github.com/madskristensen/WorkspaceFiles/actions/workflows/build.yaml/badge.svg)](https://github.com/madskristensen/WorkspaceFiles/actions/workflows/build.yaml)
 
 Download this extension from the [Visual Studio Marketplace][marketplace]
 or get the [CI build][vsixgallery].
