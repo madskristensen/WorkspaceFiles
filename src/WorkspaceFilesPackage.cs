@@ -20,6 +20,10 @@ namespace WorkspaceFiles
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
             await this.RegisterCommandsAsync();
+            General options = await General.GetLiveInstanceAsync();
+
+            RatingPrompt prompt = new("MadsKristensen.WorkspaceBrowser", Vsix.Name, options);
+            prompt.RegisterSuccessfulUsage();
         }
     }
 }
