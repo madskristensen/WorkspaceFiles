@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/vsix-publish",
+  "categories": [ "other", "team development" ],
+  "private": false,
+  "identity": {
+    "internalName": "WorkflowFiles",
+    "tags": [ "files", "folders", "workspace", "repo" ]
+  },
+  "assetFiles": [
+
+  ],
+  "overview": "README.md",
+  "publisher": "MadsKristensen",
+  "repo": "https://github.com/MadsKristensen/WorkflowFiles"
+}
