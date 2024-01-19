@@ -20,32 +20,50 @@ namespace WorkspaceFiles
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            if (relationshipName == KnownRelationships.Contains && !HierarchyUtilities.IsSolutionClosing)
+            if (relationshipName != KnownRelationships.Contains || HierarchyUtilities.IsSolutionClosing)
             {
-                if (item is IVsHierarchyItem hierarchyItem)
-                {
-                    if (hierarchyItem.CanonicalName?.EndsWith(".sln") == true)
-                    {
-                        var root = new DirectoryInfo(Path.GetDirectoryName(VS.Solutions.GetCurrentSolution().FullPath));
-                        return new WorkspaceItemSource(null, root);
-                    }
-                }
-
-                if (item is WorkspaceItem workspaceItem)
-                {
-                    return new WorkspaceItemSource(workspaceItem, workspaceItem.Info);
-                }
-
-                // This provider will also be given the opportunity to attach children to
-                // items it previously returned. In this way, it may build up multiple
-                // levels of items in Solution Explorer.
+                return null;
             }
+
+            if (item is IVsHierarchyItem hierarchyItem)
+            {
+                if (hierarchyItem.CanonicalName?.EndsWith(".sln") == true)
+                {
+                    return new WorkspaceItemSource(null, GetRoot());
+                }
+            }
+
+            if (item is WorkspaceItem workspaceItem)
+            {
+                return new WorkspaceItemSource(workspaceItem, workspaceItem.Info);
+            }
+
 
             // KnownRelationships.ContainedBy will be observed during Solution Explorer search,
             // where each attached item reports its parent(s) so that they may be displayed in the tree.
             // Search occurs via a MEF export of Microsoft.Internal.VisualStudio.PlatformUI.ISearchProvider.
 
             return null;
+        }
+
+        private static DirectoryInfo GetRoot()
+        {
+            var solRoot = new DirectoryInfo(Path.GetDirectoryName(VS.Solutions.GetCurrentSolution().FullPath));
+            DirectoryInfo currentRoot = new(solRoot.FullName);
+
+            while (currentRoot != null)
+            {
+                var dotGit = Path.Combine(currentRoot.FullName, ".git");
+
+                if (Directory.Exists(dotGit))
+                {
+                    return currentRoot;
+                }
+
+                currentRoot = currentRoot.Parent;
+            }
+
+            return solRoot;
         }
     }
 }
