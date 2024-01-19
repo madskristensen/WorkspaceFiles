@@ -3,7 +3,9 @@
     <Metadata>
         <Identity Id="WorkspaceFiles.e5308ac4-ca47-4992-945b-9b144a10c2d0" Version="1.0" Language="en-US" Publisher="Mads Kristensen" />
         <DisplayName>Workspace Files</DisplayName>
-        <Description>Empty VSIX Project.</Description>
+        <Description xml:space="preserve">Gives access to all files and folders from the file system under the repo- or solution root folder. All in the same Solution Explorer view.</Description>
+        <MoreInfo>https://github.com/madskristensen/WorkspaceFiles</MoreInfo>
+        <License>Resources\LICENSE.txt</License>
         <Icon>Resources\Icon.png</Icon>
         <PreviewImage>Resources\Icon.png</PreviewImage>
     </Metadata>

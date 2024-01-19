@@ -13,7 +13,9 @@ or get the [CI build][vsixgallery].
 
 > Inspired by [a popular Visual Studio feature request](https://developercommunity.visualstudio.com/t/Make-Solution-Folders-map-to-real-folder/358125?ftype=idea&stateGroup=active) on Developer Community.
 
-More info coming soon...
+Gives access to all files and folders from the file system under the repo- or solution root folder. All in the same Solution Explorer view.
+
+![Animation](art/animation.gif) 
 
 ## How can I help?
 If you enjoy using the extension, please give it a ★★★★★ rating on the [Visual Studio Marketplace][marketplace].
