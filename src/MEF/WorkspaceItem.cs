@@ -17,7 +17,7 @@ namespace WorkspaceFiles
         IContextMenuPattern,
         IInvocationPattern
     {
-        private IVsImageService2 _imageService => GetImageService();
+        private IVsImageService2 _imageService => VS.GetRequiredService<SVsImageService, IVsImageService2>();
 
         public WorkspaceItem(FileSystemInfo info, bool isRoot = false)
         {
@@ -25,10 +25,6 @@ namespace WorkspaceFiles
             _isRoot = isRoot;
         }
 
-        private static IVsImageService2 GetImageService()
-        {
-            return VS.GetRequiredService<SVsImageService, IVsImageService2>();
-        }
 
         public FileSystemInfo Info { get; }
 
@@ -51,9 +47,7 @@ namespace WorkspaceFiles
             get
             {
                 ThreadHelper.ThrowIfNotOnUIThread();
-                return _isRoot
-                    ? KnownMonikers.TeamGitRepository
-                    : Info is FileInfo ? _imageService.GetImageMonikerForFile(Info.FullName) : KnownMonikers.FolderClosed;
+                return _isRoot ? KnownMonikers.Repository : Info.GetIcon(false);
             }
         }
 
@@ -61,7 +55,8 @@ namespace WorkspaceFiles
         {
             get
             {
-                return _isRoot ? KnownMonikers.TeamGitRepository : Info is FileInfo ? IconMoniker : KnownMonikers.FolderOpened;
+                ThreadHelper.ThrowIfNotOnUIThread();
+                return _isRoot ? KnownMonikers.Repository : Info.GetIcon(true);
             }
         }
 

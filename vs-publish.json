@@ -3,7 +3,7 @@
   "categories": [ "other", "team development" ],
   "private": false,
   "identity": {
-    "internalName": "WorkflowFiles",
+    "internalName": "WorkflowBrowser",
     "tags": [ "files", "folders", "workspace", "repo" ]
   },
   "assetFiles": [
