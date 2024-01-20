@@ -18,7 +18,9 @@ namespace WorkspaceFiles
                 return _imageService.GetImageMonikerForFile(file.FullName);
             }
 
-            switch (info.Name.ToLowerInvariant())
+            var name = info.Name.ToLowerInvariant();
+
+            switch (name)
             {
                 case ".docker":
                 case "docker":
@@ -31,7 +33,7 @@ namespace WorkspaceFiles
                 case "submodules":
                 case ".submodules":
                     return KnownMonikers.Git;
-                case ".github": 
+                case ".github":
                     return KnownMonikers.GitHub;
                 case ".vs":
                     return KnownMonikers.VisualStudio;
@@ -39,7 +41,19 @@ namespace WorkspaceFiles
                     return KnownMonikers.VisualStudioOnline;
             }
 
-            return isOpen ? KnownMonikers.FolderOpened : KnownMonikers.FolderClosed;
+            if (name == "properties")
+            {
+                return isOpen ? KnownMonikers.PropertiesFolderOpen : KnownMonikers.PropertiesFolderClosed;
+            }
+
+            if (name is "bin" or "obj")
+            {
+                return isOpen ? KnownMonikers.ReferenceFolderOpened: KnownMonikers.ReferenceFolderClosed;
+            }
+
+            return name == "wwwroot"
+                ? isOpen ? KnownMonikers.WebFolderOpened : KnownMonikers.WebFolderClosed
+                : isOpen ? KnownMonikers.FolderOpened : KnownMonikers.FolderClosed;
         }
     }
 }

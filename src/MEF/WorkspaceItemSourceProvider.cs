@@ -27,7 +27,7 @@ namespace WorkspaceFiles
 
             if (item is IVsHierarchyItem hierarchyItem)
             {
-                if (hierarchyItem.CanonicalName?.EndsWith(".sln") == true)
+                if (hierarchyItem.Parent == null)
                 {
                     return new WorkspaceItemSource(null, GetRoot());
                 }

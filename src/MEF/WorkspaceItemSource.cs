@@ -21,18 +21,18 @@ namespace WorkspaceFiles
             IsUpdatingHasItems = !HasItems && _info is not FileInfo;
 
             // Sync build items
-            if (HasItems)
+            if (HasItems || (item is WorkspaceItem workspaceItem && workspaceItem.Type == WorkspaceItemType.Root))
             {
                 BuildChildItems();
             }
             // Async build items
             else if (IsUpdatingHasItems)
             {
-                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+                ThreadHelper.JoinableTaskFactory.StartOnIdle(async () =>
                 {
                     await TaskScheduler.Default;
                     BuildChildItems();
-                }).FireAndForget();
+                }, VsTaskRunContext.UIThreadIdlePriority).FireAndForget();
             }
         }
 
@@ -68,12 +68,10 @@ namespace WorkspaceFiles
             }
 
             IsUpdatingHasItems = false;
-            HasItems = _childItems.Any();
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsUpdatingHasItems)));
 
-            if (HasItems)
-            {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("HasItems"));
-            }
+            HasItems = _childItems.Any();
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasItems)));
         }
 
         public IEnumerable Items => _childItems;
