@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Imaging.Interop;
 
 namespace WorkspaceFiles
 {
+
     internal class WorkspaceItem :
         ITreeDisplayItem,
         ITreeDisplayItemWithImages,
@@ -21,14 +22,22 @@ namespace WorkspaceFiles
         public WorkspaceItem(FileSystemInfo info, bool isRoot = false)
         {
             Info = info;
-            IsRoot = isRoot;
+
+            if (isRoot)
+            {
+                Type = WorkspaceItemType.Root;
+            }
+            else
+            {
+                Type = info is FileInfo ? WorkspaceItemType.File : WorkspaceItemType.Folder;
+            }
         }
 
-        public bool IsRoot { get; }
+        public WorkspaceItemType Type { get; }
 
         public FileSystemInfo Info { get; }
 
-        public string Text => IsRoot ? "Workspace" : Info.Name;
+        public string Text => Type == WorkspaceItemType.Root ? "Workspace" : Info.Name;
 
         public string ToolTipText => "";
 
@@ -56,7 +65,7 @@ namespace WorkspaceFiles
             get
             {
                 ThreadHelper.ThrowIfNotOnUIThread();
-                return IsRoot ? KnownMonikers.Repository : Info.GetIcon(false);
+                return Type == WorkspaceItemType.Root ? KnownMonikers.Repository : Info.GetIcon(false);
             }
         }
 
@@ -65,7 +74,7 @@ namespace WorkspaceFiles
             get
             {
                 ThreadHelper.ThrowIfNotOnUIThread();
-                return IsRoot ? KnownMonikers.Repository : Info.GetIcon(true);
+                return Type == WorkspaceItemType.Root ? KnownMonikers.Repository : Info.GetIcon(true);
             }
         }
 

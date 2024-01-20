@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Windows;
 using Microsoft.Internal.VisualStudio.PlatformUI;
@@ -23,28 +22,28 @@ namespace WorkspaceFiles
                 return false;
             }
 
-            var menuId = PackageIds.FileContextMenu;
-
-            if (CurrentItem.IsRoot == true)
-            {
-                menuId = PackageIds.RootContextMenu;
-            }
-            else if (CurrentItem.Info  is DirectoryInfo)
-            {
-                menuId = PackageIds.FolderContextMenu;
-            }
-
             IVsUIShell shell = VS.GetRequiredService<SVsUIShell, IVsUIShell>();
             Guid guid = PackageGuids.WorkspaceFiles;
 
             var result = shell.ShowContextMenu(
-                dwCompRole: 0, 
-                rclsidActive: ref guid, 
-                nMenuId: menuId, 
-                pos: new[] { new POINTS() { x = (short)location.X, y = (short)location.Y } }, 
+                dwCompRole: 0,
+                rclsidActive: ref guid,
+                nMenuId: GetMenuFromNodeType(),
+                pos: new[] { new POINTS() { x = (short)location.X, y = (short)location.Y } },
                 pCmdTrgtActive: null);
 
             return ErrorHandler.Succeeded(result);
+        }
+
+        private static int GetMenuFromNodeType()
+        {
+            return CurrentItem.Type switch
+            {
+                WorkspaceItemType.File => PackageIds.FileContextMenu,
+                WorkspaceItemType.Folder => PackageIds.FolderContextMenu,
+                WorkspaceItemType.Root => PackageIds.RootContextMenu,
+                _ => throw new NotImplementedException("WorkspaceItemType not supported"),
+            };
         }
     }
 }
