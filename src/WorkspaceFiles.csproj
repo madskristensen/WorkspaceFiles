@@ -45,10 +45,13 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Commands\OpenInExplorerCommand.cs" />
+    <Compile Include="Commands\DeleteCommand.cs" />
     <Compile Include="IconMapper.cs" />
+    <Compile Include="MEF\WorkspaceItemContextMenuController.cs" />
     <Compile Include="Options\General.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Commands\MyCommand.cs" />
+    <Compile Include="Commands\SettingsCommand.cs" />
     <Compile Include="Relationships.cs" />
     <Compile Include="MEF\WorkspaceItemInvocationController.cs" />
     <Compile Include="MEF\WorkspaceItem.cs" />

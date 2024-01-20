@@ -11,6 +11,7 @@ namespace WorkspaceFiles
     [InstalledProductRegistration(Vsix.Name, Vsix.Description, Vsix.Version)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid(PackageGuids.WorkspaceFilesString)]
+    [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, SupportsProfiles = true, ProvidesLocalizedCategoryName = false)]
     [ProvideFileIcon(".gitignore", "KnownMonikers.DocumentExclude")]
     [ProvideFileIcon(".tfignore", "KnownMonikers.DocumentExclude")]
     [ProvideFileIcon(".editorconfig", "KnownMonikers.EditorConfigFile")]
@@ -20,8 +21,9 @@ namespace WorkspaceFiles
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
             await this.RegisterCommandsAsync();
+            
+            // Setup ratings prompt
             General options = await General.GetLiveInstanceAsync();
-
             RatingPrompt prompt = new("MadsKristensen.WorkspaceBrowser", Vsix.Name, options);
             prompt.RegisterSuccessfulUsage();
         }

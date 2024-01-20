@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Imaging.Interop;
-using Microsoft.VisualStudio.Shell.Interop;
 
 namespace WorkspaceFiles
 {
@@ -15,20 +15,20 @@ namespace WorkspaceFiles
         IBrowsablePattern,
         IInteractionPatternProvider,
         IContextMenuPattern,
-        IInvocationPattern
+        IInvocationPattern,
+        INotifyPropertyChanged
     {
-        private IVsImageService2 _imageService => VS.GetRequiredService<SVsImageService, IVsImageService2>();
-
         public WorkspaceItem(FileSystemInfo info, bool isRoot = false)
         {
             Info = info;
-            _isRoot = isRoot;
+            IsRoot = isRoot;
         }
 
+        public bool IsRoot { get; }
 
         public FileSystemInfo Info { get; }
 
-        public string Text => _isRoot ? "Workspace" : Info.Name;
+        public string Text => IsRoot ? "Workspace" : Info.Name;
 
         public string ToolTipText => "";
 
@@ -40,14 +40,23 @@ namespace WorkspaceFiles
 
         public FontStyle FontStyle => FontStyles.Normal;
 
-        public bool IsCut => false;
+        private bool _isCut;
+        public bool IsCut
+        {
+            get { return _isCut; }
+            set
+            {
+                _isCut = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCut)));
+            }
+        }
 
         public ImageMoniker IconMoniker
         {
             get
             {
                 ThreadHelper.ThrowIfNotOnUIThread();
-                return _isRoot ? KnownMonikers.Repository : Info.GetIcon(false);
+                return IsRoot ? KnownMonikers.Repository : Info.GetIcon(false);
             }
         }
 
@@ -56,7 +65,7 @@ namespace WorkspaceFiles
             get
             {
                 ThreadHelper.ThrowIfNotOnUIThread();
-                return _isRoot ? KnownMonikers.Repository : Info.GetIcon(true);
+                return IsRoot ? KnownMonikers.Repository : Info.GetIcon(true);
             }
         }
 
@@ -66,7 +75,7 @@ namespace WorkspaceFiles
 
         public int Priority => 0;
 
-        public IContextMenuController ContextMenuController => null;
+        public IContextMenuController ContextMenuController => new WorkspaceItemContextMenuController();
 
         public bool CanPreview => true;
 
@@ -85,12 +94,13 @@ namespace WorkspaceFiles
         private static readonly HashSet<Type> _supportedPatterns =
         [
             typeof(ITreeDisplayItem),
+            typeof(ITreeDisplayItemWithImages),
             typeof(IBrowsablePattern),
             typeof(IContextMenuPattern),
             typeof(IInvocationPattern),
         ];
 
-        private readonly bool _isRoot;
+        public event PropertyChangedEventHandler PropertyChanged;
 
         public TPattern GetPattern<TPattern>() where TPattern : class
         {
