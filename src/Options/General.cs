@@ -13,7 +13,7 @@ namespace WorkspaceFiles
     {
         [Category("General")]
         [DisplayName("Show workspace node")]
-        [Description("Determines if the Workspace node should be visible in Solution Explorer")]
+        [Description("Determines if the Workspace node should be visible in Solution Explorer. Reopen solution for changes to take effect")]
         [DefaultValue(true)]
         public bool Enabled { get; set; } = true;
 

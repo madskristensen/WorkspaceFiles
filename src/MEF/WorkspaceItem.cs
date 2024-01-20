@@ -17,27 +17,34 @@ namespace WorkspaceFiles
         IInteractionPatternProvider,
         IContextMenuPattern,
         IInvocationPattern,
-        INotifyPropertyChanged
+        IRenamePattern
     {
         public WorkspaceItem(FileSystemInfo info, bool isRoot = false)
         {
             Info = info;
 
-            if (isRoot)
-            {
-                Type = WorkspaceItemType.Root;
-            }
-            else
-            {
-                Type = info is FileInfo ? WorkspaceItemType.File : WorkspaceItemType.Folder;
-            }
+            Type = isRoot ? WorkspaceItemType.Root : info is FileInfo ? WorkspaceItemType.File : WorkspaceItemType.Folder;
+
+            _text = Type == WorkspaceItemType.Root ? "Workspace" : Info.Name;
         }
 
         public WorkspaceItemType Type { get; }
 
         public FileSystemInfo Info { get; }
 
-        public string Text => Type == WorkspaceItemType.Root ? "Workspace" : Info.Name;
+        public string Text
+        {
+            get
+            {
+                return _text;
+            }
+            set
+            {
+                _text = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Text)));
+            }
+        }
+
 
         public string ToolTipText => "";
 
@@ -50,6 +57,8 @@ namespace WorkspaceFiles
         public FontStyle FontStyle => FontStyles.Normal;
 
         private bool _isCut;
+        private string _text;
+
         public bool IsCut
         {
             get { return _isCut; }
@@ -90,6 +99,8 @@ namespace WorkspaceFiles
 
         public IInvocationController InvocationController => new WorkspaceItemInvocationController();
 
+        public bool CanRename => Type != WorkspaceItemType.Root;
+
         public int CompareTo(object obj)
         {
             return 0;
@@ -103,10 +114,10 @@ namespace WorkspaceFiles
         private static readonly HashSet<Type> _supportedPatterns =
         [
             typeof(ITreeDisplayItem),
-            typeof(ITreeDisplayItemWithImages),
             typeof(IBrowsablePattern),
             typeof(IContextMenuPattern),
             typeof(IInvocationPattern),
+            typeof(IRenamePattern),
         ];
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -114,6 +125,29 @@ namespace WorkspaceFiles
         public TPattern GetPattern<TPattern>() where TPattern : class
         {
             return _supportedPatterns.Contains(typeof(TPattern)) ? this as TPattern : null;
+        }
+
+        public IRenameItemTransaction BeginRename(object container, Func<IRenameItemTransaction, IRenameItemValidationResult> validator)
+        {
+            return new RenameTransaction(this, container, validator);
+        }
+
+        private class RenameTransaction : RenameItemTransaction
+        {
+            public RenameTransaction(WorkspaceItem namingRule, object container, Func<IRenameItemTransaction, IRenameItemValidationResult> validator)
+                : base(namingRule, container, validator)
+            {
+                RenameLabel = namingRule.Text;
+                Completed += (s, e) =>
+                {
+                    namingRule.Text = RenameLabel;
+                };
+            }
+
+            public override void Commit(RenameItemCompletionFocusBehavior completionFocusBehavior)
+            {
+                base.Commit(completionFocusBehavior);
+            }
         }
     }
 }

@@ -45,6 +45,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Commands\EnableWorkspaceCommand.cs" />
     <Compile Include="Commands\OpenInExplorerCommand.cs" />
     <Compile Include="Commands\DeleteCommand.cs" />
     <Compile Include="IconMapper.cs" />

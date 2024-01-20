@@ -38,6 +38,9 @@
       <Group guid="WorkspaceFiles" id="SettingsGroup" priority="0x0700">
         <Parent guid="WorkspaceFiles" id="RootContextMenu"/>
       </Group>
+      <Group guid="WorkspaceFiles" id="SolutionToolbarGroup" priority="0xF000">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_TOOL_PROJWIN"/>
+      </Group>
     </Groups>
 
     <Buttons>
@@ -70,8 +73,25 @@
           <LocCanonicalName>.WorkspaceBrowser.OpenInExplorer</LocCanonicalName>
         </Strings>
       </Button>
+
+      <!--<Button guid="WorkspaceFiles" id="ToggleWorkspace" priority="0x0120" type="Button">
+        <Parent guid="WorkspaceFiles" id="SolutionToolbarGroup" />
+        <Icon guid="ImageCatalogGuid" id="Repository" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings>
+          <ButtonText>&amp;Enable Workspace Browser</ButtonText>
+          <LocCanonicalName>.WorkspaceBrowser.Enable</LocCanonicalName>
+        </Strings>
+      </Button>-->
     </Buttons>
   </Commands>
+
+  <VisibilityConstraints>
+    <VisibilityItem guid="WorkspaceFiles" id="ToggleWorkspace" context="UICONTEXT_SolutionHasSingleProject" />
+    <VisibilityItem guid="WorkspaceFiles" id="ToggleWorkspace" context="UICONTEXT_SolutionHasMultipleProjects" />
+  </VisibilityConstraints>
 
   <CommandPlacements>
     <CommandPlacement guid="WorkspaceFiles" id="OpenInExplorer" priority="100">
@@ -91,9 +111,11 @@
       <IDSymbol name="FileContextMenuGroup" value="0x020" />
       <IDSymbol name="FolderContextMenuGroup" value="0x030" />
       <IDSymbol name="SettingsGroup" value="0x040" />
+      <IDSymbol name="SolutionToolbarGroup" value="0x050"/>
       <IDSymbol name="Settings" value="0x0100" />
       <IDSymbol name="Delete" value="0x0200" />
       <IDSymbol name="OpenInExplorer" value="0x0300" />
+      <IDSymbol name="ToggleWorkspace" value="0x0400" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

@@ -20,7 +20,7 @@ namespace WorkspaceFiles
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            if (relationshipName != KnownRelationships.Contains || HierarchyUtilities.IsSolutionClosing)
+            if (!General.Instance.Enabled || relationshipName != KnownRelationships.Contains || HierarchyUtilities.IsSolutionClosing)
             {
                 return null;
             }
