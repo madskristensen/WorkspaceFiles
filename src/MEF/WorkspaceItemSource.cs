@@ -11,17 +11,16 @@ namespace WorkspaceFiles
     internal class WorkspaceItemSource : IAsyncAttachedCollectionSource
     {
         private readonly FileSystemInfo _info;
-        private List<WorkspaceItem> _childItems = new();
+        private List<WorkspaceItem> _childItems = [];
 
         public WorkspaceItemSource(object item, FileSystemInfo info)
         {
             _info = info;
             SourceItem = item;
-            HasItems = item == null; // workspace node
-            IsUpdatingHasItems = !HasItems && _info is not FileInfo;
+            IsUpdatingHasItems = _info is not FileInfo;
 
             // Sync build items
-            if (HasItems || (item is WorkspaceItem workspaceItem && workspaceItem.Type == WorkspaceItemType.Root))
+            if (item == null || (item is WorkspaceItem workspaceItem && workspaceItem.Type == WorkspaceItemType.Root))
             {
                 BuildChildItems();
             }
@@ -38,7 +37,7 @@ namespace WorkspaceFiles
 
         public object SourceItem { get; }
 
-        public bool HasItems { get; private set; }
+        public bool HasItems => _childItems?.Count > 0;
 
         public bool IsUpdatingHasItems { get; private set; }
 
@@ -56,12 +55,7 @@ namespace WorkspaceFiles
             }
             else if (_info is DirectoryInfo dir)
             {
-                foreach (FileSystemInfo item in dir.GetDirectories())
-                {
-                    _childItems.Add(new WorkspaceItem(item));
-                }
-
-                foreach (FileSystemInfo item in dir.GetFiles())
+                foreach (FileSystemInfo item in dir.EnumerateFileSystemInfos().OrderBy(f => f is FileInfo))
                 {
                     _childItems.Add(new WorkspaceItem(item));
                 }
@@ -69,8 +63,6 @@ namespace WorkspaceFiles
 
             IsUpdatingHasItems = false;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsUpdatingHasItems)));
-
-            HasItems = _childItems.Any();
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasItems)));
         }
 

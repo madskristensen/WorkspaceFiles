@@ -8,7 +8,6 @@ using Microsoft.VisualStudio.Imaging.Interop;
 
 namespace WorkspaceFiles
 {
-
     internal class WorkspaceItem :
         ITreeDisplayItem,
         ITreeDisplayItemWithImages,
@@ -16,13 +15,12 @@ namespace WorkspaceFiles
         IBrowsablePattern,
         IInteractionPatternProvider,
         IContextMenuPattern,
-        IInvocationPattern,
-        IRenamePattern
+        IInvocationPattern
     {
+        private string _text;
         public WorkspaceItem(FileSystemInfo info, bool isRoot = false)
         {
             Info = info;
-
             Type = isRoot ? WorkspaceItemType.Root : info is FileInfo ? WorkspaceItemType.File : WorkspaceItemType.Folder;
 
             _text = Type == WorkspaceItemType.Root ? "Workspace" : Info.Name;
@@ -34,17 +32,16 @@ namespace WorkspaceFiles
 
         public string Text
         {
-            get
-            {
-                return _text;
-            }
+            get => _text;
             set
             {
-                _text = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Text)));
+                if (_text != value)
+                {
+                    _text = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Text)));
+                }
             }
         }
-
 
         public string ToolTipText => "";
 
@@ -57,15 +54,17 @@ namespace WorkspaceFiles
         public FontStyle FontStyle => FontStyles.Normal;
 
         private bool _isCut;
-        private string _text;
 
         public bool IsCut
         {
-            get { return _isCut; }
+            get => _isCut;
             set
             {
-                _isCut = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCut)));
+                if (_isCut != value)
+                {
+                    _isCut = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCut)));
+                }
             }
         }
 
@@ -87,9 +86,9 @@ namespace WorkspaceFiles
             }
         }
 
-        public ImageMoniker OverlayIconMoniker => KnownMonikers.Blank;
+        public ImageMoniker OverlayIconMoniker => default;
 
-        public ImageMoniker StateIconMoniker => KnownMonikers.Blank;
+        public ImageMoniker StateIconMoniker => default;
 
         public int Priority => 0;
 
@@ -99,17 +98,18 @@ namespace WorkspaceFiles
 
         public IInvocationController InvocationController => new WorkspaceItemInvocationController();
 
-        public bool CanRename => Type != WorkspaceItemType.Root;
-
         public int CompareTo(object obj)
         {
+            if (obj is ITreeDisplayItem item)
+            {
+                // Order by caption
+                return StringComparer.OrdinalIgnoreCase.Compare(Text, item.Text);
+            }
+
             return 0;
         }
 
-        public object GetBrowseObject()
-        {
-            return null;
-        }
+        public object GetBrowseObject() => null;
 
         private static readonly HashSet<Type> _supportedPatterns =
         [
@@ -117,7 +117,6 @@ namespace WorkspaceFiles
             typeof(IBrowsablePattern),
             typeof(IContextMenuPattern),
             typeof(IInvocationPattern),
-            typeof(IRenamePattern),
         ];
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -125,29 +124,6 @@ namespace WorkspaceFiles
         public TPattern GetPattern<TPattern>() where TPattern : class
         {
             return _supportedPatterns.Contains(typeof(TPattern)) ? this as TPattern : null;
-        }
-
-        public IRenameItemTransaction BeginRename(object container, Func<IRenameItemTransaction, IRenameItemValidationResult> validator)
-        {
-            return new RenameTransaction(this, container, validator);
-        }
-
-        private class RenameTransaction : RenameItemTransaction
-        {
-            public RenameTransaction(WorkspaceItem namingRule, object container, Func<IRenameItemTransaction, IRenameItemValidationResult> validator)
-                : base(namingRule, container, validator)
-            {
-                RenameLabel = namingRule.Text;
-                Completed += (s, e) =>
-                {
-                    namingRule.Text = RenameLabel;
-                };
-            }
-
-            public override void Commit(RenameItemCompletionFocusBehavior completionFocusBehavior)
-            {
-                base.Commit(completionFocusBehavior);
-            }
         }
     }
 }
