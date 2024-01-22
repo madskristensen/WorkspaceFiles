@@ -3,20 +3,20 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.Threading;
+using Microsoft.Internal.VisualStudio.PlatformUI;
 
 namespace WorkspaceFiles
 {
-    internal class WorkspaceItemSource : IAsyncAttachedCollectionSource
+    internal class WorkspaceItemSource : IAsyncAttachedCollectionSource, ISupportExpansionEvents
     {
         private readonly FileSystemInfo _info;
-        private List<WorkspaceItem> _childItems = [];
+        private readonly List<WorkspaceItem> _childItems = [];
 
         public WorkspaceItemSource(object item, FileSystemInfo info)
         {
             _info = info;
             SourceItem = item;
+            HasItems = _info is not FileInfo;
             IsUpdatingHasItems = _info is not FileInfo;
 
             // Sync build items
@@ -24,26 +24,17 @@ namespace WorkspaceFiles
             {
                 BuildChildItems();
             }
-            // Async build items
-            else if (IsUpdatingHasItems)
-            {
-                ThreadHelper.JoinableTaskFactory.StartOnIdle(async () =>
-                {
-                    await TaskScheduler.Default;
-                    BuildChildItems();
-                }, VsTaskRunContext.UIThreadIdlePriority).FireAndForget();
-            }
         }
 
         public object SourceItem { get; }
 
-        public bool HasItems => _childItems?.Count > 0;
+        public bool HasItems { get; private set; }
 
         public bool IsUpdatingHasItems { get; private set; }
 
         private void BuildChildItems()
         {
-            _childItems = [];
+            _childItems.Clear();
 
             if (SourceItem == null)
             {
@@ -63,7 +54,28 @@ namespace WorkspaceFiles
 
             IsUpdatingHasItems = false;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsUpdatingHasItems)));
+
+            HasItems = _childItems.Any();
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasItems)));
+        }
+
+        public void BeforeExpand()
+        {
+            IsUpdatingHasItems = true;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsUpdatingHasItems)));
+            BuildChildItems();
+        }
+
+        public void AfterCollapse()
+        {
+            foreach (WorkspaceItem item in _childItems.ToArray())
+            {
+                if (!File.Exists(item.Info.FullName) && !Directory.Exists(item.Info.FullName))
+                {
+                    item.Info.Refresh();
+                    item.Dispose();
+                }
+            }
         }
 
         public IEnumerable Items => _childItems;

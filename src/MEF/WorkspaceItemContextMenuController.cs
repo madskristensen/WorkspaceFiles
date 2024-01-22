@@ -29,7 +29,7 @@ namespace WorkspaceFiles
                 dwCompRole: 0,
                 rclsidActive: ref guid,
                 nMenuId: GetMenuFromNodeType(),
-                pos: new[] { new POINTS() { x = (short)location.X, y = (short)location.Y } },
+                pos: [new POINTS() { x = (short)location.X, y = (short)location.Y }],
                 pCmdTrgtActive: null);
 
             return ErrorHandler.Succeeded(result);

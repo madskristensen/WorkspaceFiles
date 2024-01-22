@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using Microsoft.Internal.VisualStudio.PlatformUI;
@@ -8,6 +9,7 @@ using Microsoft.VisualStudio.Imaging.Interop;
 
 namespace WorkspaceFiles
 {
+    [DebuggerDisplay("{Text}")]
     internal class WorkspaceItem :
         ITreeDisplayItem,
         ITreeDisplayItemWithImages,
@@ -15,15 +17,19 @@ namespace WorkspaceFiles
         IBrowsablePattern,
         IInteractionPatternProvider,
         IContextMenuPattern,
-        IInvocationPattern
+        IInvocationPattern,
+        INotifyPropertyChanged,
+        ISupportDisposalNotification
     {
         private string _text;
+        private bool _isCut;
+
         public WorkspaceItem(FileSystemInfo info, bool isRoot = false)
         {
             Info = info;
             Type = isRoot ? WorkspaceItemType.Root : info is FileInfo ? WorkspaceItemType.File : WorkspaceItemType.Folder;
 
-            _text = Type == WorkspaceItemType.Root ? "Workspace" : Info.Name;
+            _text = Type == WorkspaceItemType.Root ? "File Explorer" : Info.Name;
         }
 
         public WorkspaceItemType Type { get; }
@@ -53,8 +59,6 @@ namespace WorkspaceFiles
 
         public FontStyle FontStyle => FontStyles.Normal;
 
-        private bool _isCut;
-
         public bool IsCut
         {
             get => _isCut;
@@ -73,7 +77,7 @@ namespace WorkspaceFiles
             get
             {
                 ThreadHelper.ThrowIfNotOnUIThread();
-                return Type == WorkspaceItemType.Root ? KnownMonikers.Repository : Info.GetIcon(false);
+                return Type == WorkspaceItemType.Root ? KnownMonikers.RemoteFolder : Info.GetIcon(false);
             }
         }
 
@@ -82,7 +86,7 @@ namespace WorkspaceFiles
             get
             {
                 ThreadHelper.ThrowIfNotOnUIThread();
-                return Type == WorkspaceItemType.Root ? KnownMonikers.Repository : Info.GetIcon(true);
+                return Type == WorkspaceItemType.Root ? KnownMonikers.RemoteFolderOpen : Info.GetIcon(true);
             }
         }
 
@@ -97,6 +101,17 @@ namespace WorkspaceFiles
         public bool CanPreview => true;
 
         public IInvocationController InvocationController => new WorkspaceItemInvocationController();
+
+        public bool IsDisposed { get; private set; }
+
+        public void Dispose()
+        {
+            if (!IsDisposed)
+            {
+                IsDisposed = true;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsDisposed)));
+            }
+        }
 
         public int CompareTo(object obj)
         {
@@ -117,13 +132,35 @@ namespace WorkspaceFiles
             typeof(IBrowsablePattern),
             typeof(IContextMenuPattern),
             typeof(IInvocationPattern),
+            typeof(ISupportExpansionEvents),
+            typeof(ISupportDisposalNotification),
         ];
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         public TPattern GetPattern<TPattern>() where TPattern : class
         {
-            return _supportedPatterns.Contains(typeof(TPattern)) ? this as TPattern : null;
+            if (!IsDisposed)
+            {
+                if (_supportedPatterns.Contains(typeof(TPattern)))
+                {
+                    return this as TPattern;
+                }
+            }
+            else
+            {
+                // If this item has been deleted, it no longer supports any patterns
+                // other than ISupportDisposalNotification.
+                // It's valid to use GetPattern on a deleted item, but there are no
+                // longer any pattern contracts it fulfills other than the contract
+                // that reports the item as a dead ITransientObject.
+                if (typeof(TPattern) == typeof(ISupportDisposalNotification))
+                {
+                    return this as TPattern;
+                }
+            }
+
+            return null;
         }
     }
 }

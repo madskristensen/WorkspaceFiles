@@ -5,7 +5,7 @@
     {
         protected override void Execute(object sender, EventArgs e)
         {
-            //WorkspaceItemContextMenuController.CurrentItem.IsCut = true;
+            WorkspaceItemContextMenuController.CurrentItem.IsCut = true;
             VS.MessageBox.Show("Not implemented yet");
         }
     }
