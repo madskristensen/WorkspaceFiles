@@ -3,10 +3,17 @@
     [Command(PackageIds.Delete)]
     internal sealed class DeleteCommand : BaseCommand<DeleteCommand>
     {
-        protected override void Execute(object sender, EventArgs e)
+        protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
         {
-            WorkspaceItemContextMenuController.CurrentItem.IsCut = true;
-            VS.MessageBox.Show("Not implemented yet");
+            try
+            {
+                WorkspaceItemContextMenuController.CurrentItem.Info.Delete();
+                WorkspaceItemContextMenuController.CurrentItem.IsCut = true;
+            }
+            catch (Exception ex)
+            {
+                await VS.MessageBox.ShowErrorAsync(ex.Message);
+            }
         }
     }
 }

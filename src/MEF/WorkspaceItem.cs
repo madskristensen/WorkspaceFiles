@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Windows;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Imaging;
@@ -34,7 +35,7 @@ namespace WorkspaceFiles
 
         public WorkspaceItemType Type { get; }
 
-        public FileSystemInfo Info { get; }
+        public FileSystemInfo Info { get; set; }
 
         public string Text
         {

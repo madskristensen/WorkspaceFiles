@@ -9,8 +9,11 @@ namespace WorkspaceFiles
 {
     internal class WorkspaceItemSource : IAsyncAttachedCollectionSource, ISupportExpansionEvents
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+
         private readonly FileSystemInfo _info;
         private readonly List<WorkspaceItem> _childItems = [];
+        private FileSystemWatcher _watcher;
 
         public WorkspaceItemSource(object item, FileSystemInfo info)
         {
@@ -32,6 +35,8 @@ namespace WorkspaceFiles
 
         public bool IsUpdatingHasItems { get; private set; }
 
+        public IEnumerable Items => _childItems;
+
         private void BuildChildItems()
         {
             _childItems.Clear();
@@ -46,10 +51,7 @@ namespace WorkspaceFiles
             }
             else if (_info is DirectoryInfo dir)
             {
-                foreach (FileSystemInfo item in dir.EnumerateFileSystemInfos().OrderBy(f => f is FileInfo))
-                {
-                    _childItems.Add(new WorkspaceItem(item));
-                }
+                _childItems.AddRange(dir.EnumerateFileSystemInfos().OrderBy(f => f is FileInfo).Select(i => new WorkspaceItem(i)));
             }
 
             IsUpdatingHasItems = false;
@@ -64,22 +66,68 @@ namespace WorkspaceFiles
             IsUpdatingHasItems = true;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsUpdatingHasItems)));
             BuildChildItems();
+
+            _watcher = new FileSystemWatcher(_info.FullName)
+            {
+                IncludeSubdirectories = false,
+                EnableRaisingEvents = true
+            };
+            _watcher.Renamed += _watcher_Renamed;
+            _watcher.Deleted += _watcher_Deleted;
+            _watcher.Created += _watcher_Created;
         }
 
         public void AfterCollapse()
         {
-            foreach (WorkspaceItem item in _childItems.ToArray())
+            _watcher.Renamed -= _watcher_Renamed;
+            _watcher.Deleted -= _watcher_Deleted;
+            _watcher.Created -= _watcher_Created;
+            _watcher.Dispose();
+        }
+
+        private void _watcher_Renamed(object sender, RenamedEventArgs e)
+        {
+            WorkspaceItem item = _childItems.FirstOrDefault(i => e.OldFullPath == i.Info.FullName);
+
+            if (item != null)
+            {
+                if (item.Info is FileInfo)
+                {
+                    item.Info = new FileInfo(e.FullPath);
+                }
+                else if (item.Info is DirectoryInfo)
+                {
+                    item.Info = new DirectoryInfo(e.FullPath);
+                }
+
+                item.Text = e.Name;
+            }
+        }
+
+        private void _watcher_Deleted(object sender, FileSystemEventArgs e)
+        {
+            WorkspaceItem item = _childItems.FirstOrDefault(i => e.FullPath == i.Info.FullName);
+
+            if (item != null)
             {
                 if (!File.Exists(item.Info.FullName) && !Directory.Exists(item.Info.FullName))
                 {
                     item.Info.Refresh();
-                    item.Dispose();
+                    //item.Dispose();
+                    item.IsCut = true;
                 }
             }
         }
 
-        public IEnumerable Items => _childItems;
+        private void _watcher_Created(object sender, FileSystemEventArgs e)
+        {
+            WorkspaceItem item = _childItems.FirstOrDefault(i => e.FullPath == i.Info.FullName);
 
-        public event PropertyChangedEventHandler PropertyChanged;
+            if (item != null)
+            {
+                item.Info.Refresh();
+                item.IsCut = false;
+            }
+        }
     }
 }
