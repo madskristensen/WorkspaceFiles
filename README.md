@@ -2,7 +2,7 @@
 [vsixgallery]: http://vsixgallery.com/extension/WorkspaceFiles.e5308ac4-ca47-4992-945b-9b144a10c2d0/
 [repo]:https://github.com/madskristensen/WorkspaceFiles
 
-# Workspace Files for Visual Studio
+# File Explorer for Visual Studio
 
 [![Build](https://github.com/madskristensen/WorkspaceFiles/actions/workflows/build.yaml/badge.svg)](https://github.com/madskristensen/WorkspaceFiles/actions/workflows/build.yaml)
 
