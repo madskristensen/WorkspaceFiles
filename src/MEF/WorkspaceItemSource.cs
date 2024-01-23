@@ -79,10 +79,10 @@ namespace WorkspaceFiles
 
         public void AfterCollapse()
         {
-            _watcher.Renamed -= _watcher_Renamed;
-            _watcher.Deleted -= _watcher_Deleted;
-            _watcher.Created -= _watcher_Created;
-            _watcher.Dispose();
+            //_watcher.Renamed -= _watcher_Renamed;
+            //_watcher.Deleted -= _watcher_Deleted;
+            //_watcher.Created -= _watcher_Created;
+            //_watcher.Dispose();
         }
 
         private void _watcher_Renamed(object sender, RenamedEventArgs e)

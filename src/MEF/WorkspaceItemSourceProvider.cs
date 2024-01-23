@@ -27,9 +27,9 @@ namespace WorkspaceFiles
 
             if (item is IVsHierarchyItem hierarchyItem)
             {
-                if (hierarchyItem.Parent == null)
+                if (hierarchyItem.Parent == null && VS.Solutions.GetCurrentSolution() is Solution solution && TryGetRoot(solution, out var root))
                 {
-                    return new WorkspaceItemSource(null, GetRoot());
+                    return new WorkspaceItemSource(null, root);
                 }
             }
 
@@ -46,9 +46,16 @@ namespace WorkspaceFiles
             return null;
         }
 
-        private static DirectoryInfo GetRoot()
+        private static bool TryGetRoot(Solution solution, out DirectoryInfo solRoot)
         {
-            var solRoot = new DirectoryInfo(Path.GetDirectoryName(VS.Solutions.GetCurrentSolution().FullPath));
+            solRoot = null;
+
+            if (string.IsNullOrEmpty(solution?.FullPath))
+            {
+                return false;
+            }
+
+            solRoot = new DirectoryInfo(Path.GetDirectoryName(solution.FullPath));
             DirectoryInfo currentRoot = new(solRoot.FullName);
 
             while (currentRoot != null)
@@ -57,13 +64,14 @@ namespace WorkspaceFiles
 
                 if (Directory.Exists(dotGit))
                 {
-                    return currentRoot;
+                    solRoot = currentRoot;
+                    return true;
                 }
 
                 currentRoot = currentRoot.Parent;
             }
 
-            return solRoot;
+            return true;
         }
     }
 }

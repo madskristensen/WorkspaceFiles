@@ -11,7 +11,7 @@ namespace WorkspaceFiles
         public const string Name = "File Explorer";
         public const string Description = @"Gives access to all files and folders from the file system under the repo- or solution root folder. All in the same Solution Explorer view.";
         public const string Language = "en-US";
-        public const string Version = "1.0";
+        public const string Version = "1.0.999";
         public const string Author = "Mads Kristensen";
         public const string Tags = "files, folders, repo, root";
     }
