@@ -35,11 +35,14 @@
       <Group guid="WorkspaceFiles" id="FolderContextMenuGroup" priority="0x0600">
         <Parent guid="WorkspaceFiles" id="FolderContextMenu"/>
       </Group>
-      <Group guid="WorkspaceFiles" id="SettingsGroup" priority="0x0700">
+      <!--<Group guid="WorkspaceFiles" id="SettingsGroup" priority="0x0700">
         <Parent guid="WorkspaceFiles" id="RootContextMenu"/>
-      </Group>
+      </Group>-->
       <Group guid="WorkspaceFiles" id="SolutionToolbarGroup" priority="0xF000">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_TOOL_PROJWIN"/>
+      </Group>
+      <Group guid="WorkspaceFiles" id="FileOpenGroup" priority="0xF000">
+        <Parent guid="WorkspaceFiles" id="FileContextMenu"/>
       </Group>
     </Groups>
 
@@ -74,6 +77,26 @@
         </Strings>
       </Button>
 
+      <Button guid="WorkspaceFiles" id="CopyFullPath" priority="0x0130" type="Button">
+        <Parent guid="WorkspaceFiles" id="FileContextMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="Copy" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>&amp;Copy Full Path</ButtonText>
+          <LocCanonicalName>.FileExplorer.CopyFullPath</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="WorkspaceFiles" id="OpenInDefaultProgram" priority="0x0130" type="Button">
+        <Parent guid="WorkspaceFiles" id="FileOpenGroup" />
+        <Icon guid="ImageCatalogGuid" id="OpenFileDialog" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>&amp;Open in Default Program</ButtonText>
+          <LocCanonicalName>.FileExplorer.OpenInDefaultProgram</LocCanonicalName>
+        </Strings>
+      </Button>
+
       <Button guid="WorkspaceFiles" id="ToggleWorkspace" priority="0x0120" type="Button">
         <Parent guid="WorkspaceFiles" id="SolutionToolbarGroup" />
         <Icon guid="ImageCatalogGuid" id="OpenProjectFolder" />
@@ -99,24 +122,38 @@
       <Parent guid="WorkspaceFiles" id="FolderContextMenuGroup" />
     </CommandPlacement>
     <CommandPlacement guid="WorkspaceFiles" id="OpenInExplorer" priority="100">
-      <Parent guid="WorkspaceFiles" id="FileContextMenuGroup" />
+      <Parent guid="WorkspaceFiles" id="FileOpenGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="WorkspaceFiles" id="CopyFullPath" priority="100">
+      <Parent guid="WorkspaceFiles" id="FolderContextMenuGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="WorkspaceFiles" id="CopyFullPath" priority="100">
+      <Parent guid="WorkspaceFiles" id="RootContextMenuGroup" />
     </CommandPlacement>
   </CommandPlacements>
 
   <Symbols>
     <GuidSymbol name="WorkspaceFiles" value="{d428d0a0-b960-4617-a7fd-15743d49e72e}">
+      <!--Menus-->
       <IDSymbol name="RootContextMenu" value="0x0001" />
       <IDSymbol name="FileContextMenu" value="0x0002" />
       <IDSymbol name="FolderContextMenu" value="0x0003" />
+
+      <!--Groups-->
       <IDSymbol name="RootContextMenuGroup" value="0x010" />
       <IDSymbol name="FileContextMenuGroup" value="0x020" />
       <IDSymbol name="FolderContextMenuGroup" value="0x030" />
-      <IDSymbol name="SettingsGroup" value="0x040" />
+      <IDSymbol name="FileOpenGroup" value="0x040" />
+      <!--<IDSymbol name="SettingsGroup" value="0x040" />-->
       <IDSymbol name="SolutionToolbarGroup" value="0x050"/>
+      
+      <!--Commands-->
       <IDSymbol name="Settings" value="0x0100" />
       <IDSymbol name="Delete" value="0x0200" />
       <IDSymbol name="OpenInExplorer" value="0x0300" />
       <IDSymbol name="ToggleWorkspace" value="0x0400" />
+      <IDSymbol name="CopyFullPath" value="0x0500" />
+      <IDSymbol name="OpenInDefaultProgram" value="0x0600" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

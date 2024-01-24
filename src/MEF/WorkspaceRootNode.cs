@@ -10,7 +10,6 @@ namespace WorkspaceFiles
         private readonly ObservableCollection<WorkspaceItemNode> _innerItems = [];
         private bool _disposed = false;
         private readonly DirectoryInfo _info;
-        private readonly DateTime _lastUpdated; // used for debouncing purposes.
 
         public WorkspaceRootNode(DirectoryInfo info)
         {
@@ -20,14 +19,11 @@ namespace WorkspaceFiles
 
         private void OnSettingsSaved(General general)
         {
-            if (DateTime.Now > _lastUpdated.AddSeconds(1)) // debounce
+            ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
             {
-                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
-                {
-                    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                    BuildInnerItems();
-                }).FireAndForget();
-            }
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                BuildInnerItems();
+            }).FireAndForget();
         }
 
         public object SourceItem => this;
