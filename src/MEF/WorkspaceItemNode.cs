@@ -8,7 +8,7 @@ using System.Windows;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Imaging.Interop;
-using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Language.Intellisense;
 
 namespace WorkspaceFiles
 {
@@ -26,7 +26,7 @@ namespace WorkspaceFiles
         ISupportDisposalNotification,
         IDisposable
     {
-        private readonly List<WorkspaceItemNode> _childItems = [];
+        private BulkObservableCollection<WorkspaceItemNode> _childItems;
         private string _text;
         private bool _isCut;
         private FileSystemWatcher _watcher;
@@ -61,7 +61,18 @@ namespace WorkspaceFiles
 
         public bool IsUpdatingHasItems { get; private set; }
 
-        public IEnumerable Items => _childItems;
+        public IEnumerable Items
+        {
+            get
+            {
+                if (_childItems == null)
+                {
+                    BuildChildItems();
+                }
+
+                return _childItems;
+            }
+        }
 
         public string Text
         {
@@ -144,7 +155,8 @@ namespace WorkspaceFiles
 
         private void BuildChildItems()
         {
-            _childItems.Clear();
+            _childItems = [];
+            _childItems.BeginBulkOperation();
 
             if (Info is FileInfo file)
             {
@@ -152,21 +164,19 @@ namespace WorkspaceFiles
             }
             else if (Info is DirectoryInfo dir)
             {
-                _childItems.AddRange(dir.EnumerateFileSystemInfos().OrderBy(f => f is FileInfo).Select(i => new WorkspaceItemNode(this, i)));
+                foreach (FileSystemInfo item in dir.EnumerateFileSystemInfos().OrderBy(i => i is FileInfo))
+                {
+                    _childItems.Add(new WorkspaceItemNode(this, item));
+                }
             }
 
+            _childItems.EndBulkOperation();
             HasItems = _childItems.Count > 0;
             RaisePropertyChanged(nameof(HasItems));
-            RaisePropertyChanged(nameof(Items));
         }
 
         public void BeforeExpand()
         {
-            if (_childItems.Count == 0 && HasItems)
-            {
-                BuildChildItems();
-            }
-
             if (Info is DirectoryInfo && _watcher == null)
             {
                 _watcher = new FileSystemWatcher(Info.FullName);
@@ -187,8 +197,18 @@ namespace WorkspaceFiles
 
             if (item != null)
             {
-                item.Info = item.Info is FileInfo ? new FileInfo(e.FullPath) : new DirectoryInfo(e.FullPath);
-                item.Text = e.Name;
+                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+                {
+                    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                    item.Info = item.Info is FileInfo ? new FileInfo(e.FullPath) : new DirectoryInfo(e.FullPath);
+                    item.Text = e.Name;
+
+                    WorkspaceItemNode[] items = _childItems.OrderBy(i => i.Text).OrderBy(i => i.Info is FileInfo).ToArray();
+                    _childItems.BeginBulkOperation();
+                    _childItems.Clear();
+                    _childItems.AddRange(items);
+                    _childItems.EndBulkOperation();
+                }).FireAndForget();
             }
         }
 
@@ -198,17 +218,35 @@ namespace WorkspaceFiles
 
             if (_childItems.Contains(item))
             {
-                item.IsCut = true;
-                _childItems.Remove(item);
-                RaisePropertyChanged(nameof(HasItems));
+                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+                {
+                    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                    item.IsCut = true;
+                    _childItems.Remove(item);
+                    RaisePropertyChanged(nameof(HasItems));
+                }).FireAndForget();
             }
         }
 
         private void OnCreated(object sender, FileSystemEventArgs e)
         {
             FileSystemInfo info = File.Exists(e.FullPath) ? new FileInfo(e.FullPath) : new DirectoryInfo(e.FullPath);
-            _childItems.Add(new WorkspaceItemNode(this, info));
-            RaisePropertyChanged(nameof(HasItems));
+
+            ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                _childItems.BeginBulkOperation();
+                _childItems.Add(new WorkspaceItemNode(this, info));
+
+                WorkspaceItemNode[] items = _childItems.OrderBy(i => i.Text).OrderBy(i => i.Info is FileInfo).ToArray();
+
+                _childItems.Clear();
+                _childItems.AddRange(items);
+                _childItems.EndBulkOperation();
+
+                RaisePropertyChanged(nameof(HasItems));
+            }).FireAndForget();
         }
 
         public void Dispose()
@@ -224,9 +262,12 @@ namespace WorkspaceFiles
                     _watcher = null;
                 }
 
-                foreach (WorkspaceItemNode item in _childItems)
+                if (_childItems != null)
                 {
-                    item.Dispose();
+                    foreach (WorkspaceItemNode item in _childItems)
+                    {
+                        item.Dispose();
+                    }
                 }
             }
 

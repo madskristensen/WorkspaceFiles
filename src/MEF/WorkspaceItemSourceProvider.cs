@@ -28,7 +28,7 @@ namespace WorkspaceFiles
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            if (IsSolutionNode(item, out _) || item is WorkspaceItemNode)
+            if (IsSolutionNode(item) || item is WorkspaceItemNode)
             {
                 // Given the solution node or one of our nodes, we can provide children
                 yield return Relationships.Contains;
@@ -52,7 +52,7 @@ namespace WorkspaceFiles
 
             if (relationshipName == KnownRelationships.Contains)
             {
-                if (IsSolutionNode(item, out _) && TryGetRoot(out DirectoryInfo root))
+                if (IsSolutionNode(item) && TryGetRoot(out DirectoryInfo root))
                 {
                     _rootNode = new WorkspaceRootNode(root);
                     return _rootNode;
@@ -95,12 +95,11 @@ namespace WorkspaceFiles
             return true;
         }
 
-        private bool IsSolutionNode(object item, out IVsHierarchyItem hierarchyItem)
+        private bool IsSolutionNode(object item)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            hierarchyItem = item as IVsHierarchyItem;
 
-            if (hierarchyItem != null)
+            if (item is IVsHierarchyItem hierarchyItem)
             {
                 IVsHierarchyItemIdentity identity = hierarchyItem.HierarchyIdentity;
 
