@@ -54,6 +54,7 @@ namespace WorkspaceFiles
             {
                 if (IsSolutionNode(item) && TryGetRoot(out DirectoryInfo root))
                 {
+                    _rootNode?.Dispose();
                     _rootNode = new WorkspaceRootNode(root);
                     return _rootNode;
                 }

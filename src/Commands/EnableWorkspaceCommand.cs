@@ -5,20 +5,17 @@ namespace WorkspaceFiles
     [Command(PackageIds.ToggleWorkspace)]
     internal sealed class EnableWorkspaceCommand : BaseCommand<EnableWorkspaceCommand>
     {
-        protected override void Execute(object sender, EventArgs e)
+        protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
         {
             Command.Checked = !Command.Checked;
-            General.Instance.Enabled = Command.Checked;
-            General.Instance.Save();
-            
-            IAttachedCollectionService svc = VS.GetMefService<IAttachedCollectionService>();
-            Solution sol = VS.Solutions.GetCurrentSolution();
-            sol.GetItemInfo(out _, out _, out IVsHierarchyItem hierarchyItem);
-            svc.GetOrCreateCollectionSource(hierarchyItem, KnownRelationships.Contains);
+            General options = await General.GetLiveInstanceAsync();
+            options.Enabled = Command.Checked;
+            await options.SaveAsync();
         }
 
         protected override void BeforeQueryStatus(EventArgs e)
         {
+            Command.Visible = HierarchyUtilities.IsSolutionOpen;
             Command.Checked = General.Instance.Enabled;
         }
     }

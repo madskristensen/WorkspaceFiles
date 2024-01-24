@@ -44,15 +44,15 @@
     </Groups>
 
     <Buttons>
-      <Button guid="WorkspaceFiles" id="Settings" priority="0x0100" type="Button">
+      <!--<Button guid="WorkspaceFiles" id="Settings" priority="0x0100" type="Button">
         <Parent guid="WorkspaceFiles" id="SettingsGroup" />
         <Icon guid="ImageCatalogGuid" id="Settings" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>&amp;Settings</ButtonText>
-          <LocCanonicalName>.WorkspaceBrowser.Settings</LocCanonicalName>
+          <LocCanonicalName>.FileExplorer.Settings</LocCanonicalName>
         </Strings>
-      </Button>
+      </Button>-->
 
       <Button guid="WorkspaceFiles" id="Delete" priority="0x0300" type="Button">
         <Parent guid="WorkspaceFiles" id="FileContextMenuGroup" />
@@ -60,7 +60,7 @@
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>&amp;Delete</ButtonText>
-          <LocCanonicalName>.WorkspaceBrowser.Delete</LocCanonicalName>
+          <LocCanonicalName>.FileExplorer.Delete</LocCanonicalName>
         </Strings>
       </Button>
       
@@ -70,21 +70,22 @@
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>&amp;Open in File Explorer</ButtonText>
-          <LocCanonicalName>.WorkspaceBrowser.OpenInExplorer</LocCanonicalName>
+          <LocCanonicalName>.FileExplorer.OpenInExplorer</LocCanonicalName>
         </Strings>
       </Button>
 
-      <!--<Button guid="WorkspaceFiles" id="ToggleWorkspace" priority="0x0120" type="Button">
+      <Button guid="WorkspaceFiles" id="ToggleWorkspace" priority="0x0120" type="Button">
         <Parent guid="WorkspaceFiles" id="SolutionToolbarGroup" />
-        <Icon guid="ImageCatalogGuid" id="Repository" />
+        <Icon guid="ImageCatalogGuid" id="OpenProjectFolder" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <CommandFlag>DefaultInvisible</CommandFlag>
         <Strings>
-          <ButtonText>&amp;Enable Workspace Browser</ButtonText>
-          <LocCanonicalName>.WorkspaceBrowser.Enable</LocCanonicalName>
+          <ToolTipText>Toggles the File Explorer node on and off</ToolTipText>
+          <ButtonText>&amp;Enable File Explorer</ButtonText>
+          <LocCanonicalName>.FileExplorer.Enable</LocCanonicalName>
         </Strings>
-      </Button>-->
+      </Button>
     </Buttons>
   </Commands>
 

@@ -14,7 +14,7 @@ namespace WorkspaceFiles
 {
     [DebuggerDisplay("{Text}")]
     internal class WorkspaceItemNode :
-        IAsyncAttachedCollectionSource,
+        IAttachedCollectionSource,
         ISupportExpansionEvents,
         ITreeDisplayItem,
         ITreeDisplayItemWithImages,
@@ -26,7 +26,7 @@ namespace WorkspaceFiles
         ISupportDisposalNotification,
         IDisposable
     {
-        private BulkObservableCollection<WorkspaceItemNode> _childItems;
+        private BulkObservableCollection<WorkspaceItemNode> _innerItems;
         private string _text;
         private bool _isCut;
         private FileSystemWatcher _watcher;
@@ -59,18 +59,16 @@ namespace WorkspaceFiles
 
         public bool HasItems { get; private set; }
 
-        public bool IsUpdatingHasItems { get; private set; }
-
         public IEnumerable Items
         {
             get
             {
-                if (_childItems == null)
+                if (_innerItems == null)
                 {
-                    BuildChildItems();
+                    BuildInnerItems();
                 }
 
-                return _childItems;
+                return _innerItems;
             }
         }
 
@@ -153,25 +151,25 @@ namespace WorkspaceFiles
             }
         }
 
-        private void BuildChildItems()
+        private void BuildInnerItems()
         {
-            _childItems = [];
-            _childItems.BeginBulkOperation();
+            _innerItems = [];
+            _innerItems.BeginBulkOperation();
 
             if (Info is FileInfo file)
             {
-                _childItems.Add(new WorkspaceItemNode(this, file));
+                _innerItems.Add(new WorkspaceItemNode(this, file));
             }
             else if (Info is DirectoryInfo dir)
             {
                 foreach (FileSystemInfo item in dir.EnumerateFileSystemInfos().OrderBy(i => i is FileInfo))
                 {
-                    _childItems.Add(new WorkspaceItemNode(this, item));
+                    _innerItems.Add(new WorkspaceItemNode(this, item));
                 }
             }
 
-            _childItems.EndBulkOperation();
-            HasItems = _childItems.Count > 0;
+            _innerItems.EndBulkOperation();
+            HasItems = _innerItems.Count > 0;
             RaisePropertyChanged(nameof(HasItems));
         }
 
@@ -193,7 +191,7 @@ namespace WorkspaceFiles
 
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
-            WorkspaceItemNode item = _childItems.FirstOrDefault(i => e.OldFullPath == i.Info.FullName);
+            WorkspaceItemNode item = _innerItems.FirstOrDefault(i => e.OldFullPath == i.Info.FullName);
 
             if (item != null)
             {
@@ -203,26 +201,26 @@ namespace WorkspaceFiles
                     item.Info = item.Info is FileInfo ? new FileInfo(e.FullPath) : new DirectoryInfo(e.FullPath);
                     item.Text = e.Name;
 
-                    WorkspaceItemNode[] items = _childItems.OrderBy(i => i.Text).OrderBy(i => i.Info is FileInfo).ToArray();
-                    _childItems.BeginBulkOperation();
-                    _childItems.Clear();
-                    _childItems.AddRange(items);
-                    _childItems.EndBulkOperation();
+                    WorkspaceItemNode[] items = _innerItems.OrderBy(i => i.Text).OrderBy(i => i.Info is FileInfo).ToArray();
+                    _innerItems.BeginBulkOperation();
+                    _innerItems.Clear();
+                    _innerItems.AddRange(items);
+                    _innerItems.EndBulkOperation();
                 }).FireAndForget();
             }
         }
 
         private void OnDeleted(object sender, FileSystemEventArgs e)
         {
-            WorkspaceItemNode item = _childItems.FirstOrDefault(i => e.FullPath == i.Info.FullName);
+            WorkspaceItemNode item = _innerItems.FirstOrDefault(i => e.FullPath == i.Info.FullName);
 
-            if (_childItems.Contains(item))
+            if (_innerItems.Contains(item))
             {
                 ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
                 {
                     await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                     item.IsCut = true;
-                    _childItems.Remove(item);
+                    _innerItems.Remove(item);
                     RaisePropertyChanged(nameof(HasItems));
                 }).FireAndForget();
             }
@@ -236,14 +234,14 @@ namespace WorkspaceFiles
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-                _childItems.BeginBulkOperation();
-                _childItems.Add(new WorkspaceItemNode(this, info));
+                _innerItems.BeginBulkOperation();
+                _innerItems.Add(new WorkspaceItemNode(this, info));
 
-                WorkspaceItemNode[] items = _childItems.OrderBy(i => i.Text).OrderBy(i => i.Info is FileInfo).ToArray();
+                WorkspaceItemNode[] items = _innerItems.OrderBy(i => i.Text).OrderBy(i => i.Info is FileInfo).ToArray();
 
-                _childItems.Clear();
-                _childItems.AddRange(items);
-                _childItems.EndBulkOperation();
+                _innerItems.Clear();
+                _innerItems.AddRange(items);
+                _innerItems.EndBulkOperation();
 
                 RaisePropertyChanged(nameof(HasItems));
             }).FireAndForget();
@@ -262,9 +260,9 @@ namespace WorkspaceFiles
                     _watcher = null;
                 }
 
-                if (_childItems != null)
+                if (_innerItems != null)
                 {
-                    foreach (WorkspaceItemNode item in _childItems)
+                    foreach (WorkspaceItemNode item in _innerItems)
                     {
                         item.Dispose();
                     }
