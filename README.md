@@ -1,4 +1,4 @@
-﻿[marketplace]: https://marketplace.visualstudio.com/items?itemName=MadsKristensen.WorkflowFiles
+﻿[marketplace]: https://marketplace.visualstudio.com/items?itemName=MadsKristensen.WorkflowBrowser
 [vsixgallery]: http://vsixgallery.com/extension/WorkspaceFiles.e5308ac4-ca47-4992-945b-9b144a10c2d0/
 [repo]:https://github.com/madskristensen/WorkspaceFiles
 
