@@ -28,7 +28,6 @@ namespace WorkspaceFiles
         public const int FolderContextMenuGroup = 0x0030;
         public const int FileOpenGroup = 0x0040;
         public const int SolutionToolbarGroup = 0x0050;
-        public const int Settings = 0x0100;
         public const int Delete = 0x0200;
         public const int OpenInExplorer = 0x0300;
         public const int ToggleWorkspace = 0x0400;

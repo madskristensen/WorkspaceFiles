@@ -35,9 +35,6 @@
       <Group guid="WorkspaceFiles" id="FolderContextMenuGroup" priority="0x0600">
         <Parent guid="WorkspaceFiles" id="FolderContextMenu"/>
       </Group>
-      <!--<Group guid="WorkspaceFiles" id="SettingsGroup" priority="0x0700">
-        <Parent guid="WorkspaceFiles" id="RootContextMenu"/>
-      </Group>-->
       <Group guid="WorkspaceFiles" id="SolutionToolbarGroup" priority="0xF000">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_TOOL_PROJWIN"/>
       </Group>
@@ -47,16 +44,6 @@
     </Groups>
 
     <Buttons>
-      <!--<Button guid="WorkspaceFiles" id="Settings" priority="0x0100" type="Button">
-        <Parent guid="WorkspaceFiles" id="SettingsGroup" />
-        <Icon guid="ImageCatalogGuid" id="Settings" />
-        <CommandFlag>IconIsMoniker</CommandFlag>
-        <Strings>
-          <ButtonText>&amp;Settings</ButtonText>
-          <LocCanonicalName>.FileExplorer.Settings</LocCanonicalName>
-        </Strings>
-      </Button>-->
-
       <Button guid="WorkspaceFiles" id="Delete" priority="0x0300" type="Button">
         <Parent guid="WorkspaceFiles" id="FileContextMenuGroup" />
         <Icon guid="ImageCatalogGuid" id="Cancel" />
@@ -144,11 +131,9 @@
       <IDSymbol name="FileContextMenuGroup" value="0x020" />
       <IDSymbol name="FolderContextMenuGroup" value="0x030" />
       <IDSymbol name="FileOpenGroup" value="0x040" />
-      <!--<IDSymbol name="SettingsGroup" value="0x040" />-->
       <IDSymbol name="SolutionToolbarGroup" value="0x050"/>
       
       <!--Commands-->
-      <IDSymbol name="Settings" value="0x0100" />
       <IDSymbol name="Delete" value="0x0200" />
       <IDSymbol name="OpenInExplorer" value="0x0300" />
       <IDSymbol name="ToggleWorkspace" value="0x0400" />
