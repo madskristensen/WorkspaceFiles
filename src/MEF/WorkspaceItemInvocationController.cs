@@ -9,7 +9,7 @@ namespace WorkspaceFiles
     {
         public bool Invoke(IEnumerable<object> items, InputSource inputSource, bool preview)
         {
-            foreach (WorkspaceItem item in items.OfType<WorkspaceItem>())
+            foreach (WorkspaceItemNode item in items.OfType<WorkspaceItemNode>())
             {
                 if (item.Info is FileInfo)
                 {

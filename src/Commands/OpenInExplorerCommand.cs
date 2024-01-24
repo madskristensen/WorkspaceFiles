@@ -7,7 +7,7 @@ namespace WorkspaceFiles
     {
         protected override void Execute(object sender, EventArgs e)
         {
-            WorkspaceItem item = WorkspaceItemContextMenuController.CurrentItem;
+            WorkspaceItemNode item = WorkspaceItemContextMenuController.CurrentItem;
 
             var arg = $"\"{item.Info?.FullName}\"";
 

@@ -2,53 +2,74 @@
 using System.ComponentModel.Composition;
 using System.IO;
 using Microsoft.Internal.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Utilities;
 
 namespace WorkspaceFiles
 {
     [Export(typeof(IAttachedCollectionSourceProvider))]
-    [Name(nameof(WorkspaceItemSource))]
-    [Order]
+    [Name(nameof(WorkspaceItemNode))]
     internal class WorkspaceItemSourceProvider : IAttachedCollectionSourceProvider
     {
+        private WorkspaceRootNode _rootNode;
+
+        public WorkspaceItemSourceProvider()
+        {
+            Microsoft.VisualStudio.Shell.Events.SolutionEvents.OnBeforeCloseSolution += SolutionEvents_OnAfterCloseSolution;
+        }
+
+        private void SolutionEvents_OnAfterCloseSolution(object sender, EventArgs e)
+        {
+            _rootNode?.Dispose();
+        }
+
         public IEnumerable<IAttachedRelationship> GetRelationships(object item)
         {
-            yield return Relationships.Contains;
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            if (IsSolutionNode(item, out _) || item is WorkspaceItemNode)
+            {
+                // Given the solution node or one of our nodes, we can provide children
+                yield return Relationships.Contains;
+            }
+
+            //if (item is WorkspaceItemNode)
+            //{
+            //    // Given one of our nodes, we can return the item that contains it
+            //    yield return Relationships.ContainedBy;
+            //}
         }
 
         public IAttachedCollectionSource CreateCollectionSource(object item, string relationshipName)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            if (!General.Instance.Enabled || relationshipName != KnownRelationships.Contains || HierarchyUtilities.IsSolutionClosing)
+            if (HierarchyUtilities.IsSolutionClosing)
             {
                 return null;
             }
 
-            if (item is IVsHierarchyItem hierarchyItem)
+            if (relationshipName == KnownRelationships.Contains)
             {
-                if (hierarchyItem.Parent == null && VS.Solutions.GetCurrentSolution() is Solution solution && TryGetRoot(solution, out var root))
+                if (IsSolutionNode(item, out _) && TryGetRoot(out DirectoryInfo root))
                 {
-                    return new WorkspaceItemSource(null, root);
+                    _rootNode = new WorkspaceRootNode(root);
+                    return _rootNode;
+                }
+                else if (item is IAttachedCollectionSource source and (WorkspaceRootNode or WorkspaceItemNode))
+                {
+                    return source;
                 }
             }
-
-            if (item is WorkspaceItem workspaceItem)
-            {
-                return new WorkspaceItemSource(workspaceItem, workspaceItem.Info);
-            }
-
-
-            // KnownRelationships.ContainedBy will be observed during Solution Explorer search,
-            // where each attached item reports its parent(s) so that they may be displayed in the tree.
-            // Search occurs via a MEF export of Microsoft.Internal.VisualStudio.PlatformUI.ISearchProvider.
 
             return null;
         }
 
-        private static bool TryGetRoot(Solution solution, out DirectoryInfo solRoot)
+        private static bool TryGetRoot(out DirectoryInfo solRoot)
         {
             solRoot = null;
+            Solution solution = VS.Solutions.GetCurrentSolution();
 
             if (string.IsNullOrEmpty(solution?.FullPath))
             {
@@ -72,6 +93,21 @@ namespace WorkspaceFiles
             }
 
             return true;
+        }
+
+        private bool IsSolutionNode(object item, out IVsHierarchyItem hierarchyItem)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            hierarchyItem = item as IVsHierarchyItem;
+
+            if (hierarchyItem != null)
+            {
+                IVsHierarchyItemIdentity identity = hierarchyItem.HierarchyIdentity;
+
+                return identity.Hierarchy is IVsSolution && identity.ItemID == (uint)VSConstants.VSITEMID.Root;
+            }
+
+            return false;
         }
     }
 }

@@ -9,13 +9,13 @@ namespace WorkspaceFiles
 {
     internal class WorkspaceItemContextMenuController : IContextMenuController
     {
-        public static WorkspaceItem CurrentItem { get; private set; }
+        public static WorkspaceItemNode CurrentItem { get; private set; }
 
         public bool ShowContextMenu(IEnumerable<object> items, Point location)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            CurrentItem = items.OfType<WorkspaceItem>().FirstOrDefault();
+            CurrentItem = items.OfType<WorkspaceItemNode>().FirstOrDefault();
 
             if (CurrentItem == null)
             {
