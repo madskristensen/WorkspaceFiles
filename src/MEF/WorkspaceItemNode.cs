@@ -15,7 +15,6 @@ namespace WorkspaceFiles
     [DebuggerDisplay("{Text}")]
     internal class WorkspaceItemNode :
         IAttachedCollectionSource,
-        ISupportExpansionEvents,
         ITreeDisplayItem,
         ITreeDisplayItemWithImages,
         IPrioritizedComparable,
@@ -24,9 +23,10 @@ namespace WorkspaceFiles
         IContextMenuPattern,
         IInvocationPattern,
         ISupportDisposalNotification,
-        IDisposable
+        IDisposable,
+        IRefreshPattern
     {
-        private BulkObservableCollection<WorkspaceItemNode> _innerItems;
+        private readonly BulkObservableCollection<WorkspaceItemNode> _innerItems = [];
         private string _text;
         private bool _isCut;
         private FileSystemWatcher _watcher;
@@ -37,8 +37,8 @@ namespace WorkspaceFiles
             typeof(IBrowsablePattern),
             typeof(IContextMenuPattern),
             typeof(IInvocationPattern),
-            typeof(ISupportExpansionEvents),
             typeof(ISupportDisposalNotification),
+            typeof(IRefreshPattern),
         ];
 
         public WorkspaceItemNode(object parent, FileSystemInfo info)
@@ -63,7 +63,7 @@ namespace WorkspaceFiles
         {
             get
             {
-                if (_innerItems == null)
+                if (_innerItems.Count == 0)
                 {
                     BuildInnerItems();
                 }
@@ -153,9 +153,16 @@ namespace WorkspaceFiles
 
         private void BuildInnerItems()
         {
-            _innerItems = [];
-            _innerItems.BeginBulkOperation();
+            // First, clear out any existing items since this could be a refresh.
+            foreach (WorkspaceItemNode item in _innerItems)
+            {
+                item.Dispose();
+            }
 
+            _innerItems.BeginBulkOperation();
+            _innerItems.Clear();
+
+            // Second, add the new items.
             if (Info is FileInfo file)
             {
                 _innerItems.Add(new WorkspaceItemNode(this, file));
@@ -168,13 +175,7 @@ namespace WorkspaceFiles
                 }
             }
 
-            _innerItems.EndBulkOperation();
-            HasItems = _innerItems.Count > 0;
-            RaisePropertyChanged(nameof(HasItems));
-        }
-
-        public void BeforeExpand()
-        {
+            // Thirdly, hook up the file system watcher if this is a directory.
             if (Info is DirectoryInfo && _watcher == null)
             {
                 _watcher = new FileSystemWatcher(Info.FullName);
@@ -183,10 +184,11 @@ namespace WorkspaceFiles
                 _watcher.Created += OnCreated;
                 _watcher.EnableRaisingEvents = true;
             }
-        }
 
-        public void AfterCollapse()
-        {
+            // Lastly, register the updated items.
+            _innerItems.EndBulkOperation();
+            HasItems = _innerItems.Count > 0;
+            RaisePropertyChanged(nameof(HasItems));
         }
 
         private void OnRenamed(object sender, RenamedEventArgs e)
@@ -309,6 +311,20 @@ namespace WorkspaceFiles
         public void RaisePropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public Task RefreshAsync()
+        {
+            return Task.Run(async () =>
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                BuildInnerItems();
+            });
+        }
+
+        public void CancelLoad()
+        {
+
         }
     }
 }
