@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using EnvDTE;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Imaging.Interop;
@@ -24,7 +25,9 @@ namespace WorkspaceFiles
         IInvocationPattern,
         ISupportDisposalNotification,
         IDisposable,
-        IRefreshPattern
+        IRefreshPattern,
+        IDragDropSourcePattern,
+        IDragDropTargetPattern
     {
         private readonly BulkObservableCollection<WorkspaceItemNode> _innerItems = [];
         private string _text;
@@ -39,6 +42,8 @@ namespace WorkspaceFiles
             typeof(IInvocationPattern),
             typeof(ISupportDisposalNotification),
             typeof(IRefreshPattern),
+            typeof(IDragDropSourcePattern),
+            typeof(IDragDropTargetPattern),
         ];
 
         public WorkspaceItemNode(object parent, FileSystemInfo info)
@@ -132,11 +137,13 @@ namespace WorkspaceFiles
 
         public int Priority => 0;
 
-        public IContextMenuController ContextMenuController => new WorkspaceItemContextMenuController();
-
         public bool CanPreview => Info is FileInfo;
 
+        public IContextMenuController ContextMenuController => new WorkspaceItemContextMenuController();
+
         public IInvocationController InvocationController => new WorkspaceItemInvocationController();
+
+        public IDragDropSourceController DragDropSourceController => new WorkspaceItemNodeDragDropSourceController();
 
         public bool IsDisposed
         {
@@ -325,6 +332,60 @@ namespace WorkspaceFiles
         public void CancelLoad()
         {
 
+        }
+
+        public DirectionalDropArea SupportedAreas => DirectionalDropArea.On;
+
+        public void OnDragEnter(DirectionalDropArea dropArea, DragEventArgs e)
+        {
+            if (Info is DirectoryInfo && e.Data.GetDataPresent(typeof(WorkspaceItemNode)))
+            {
+                e.Effects = DragDropEffects.Move;
+            }
+        }
+
+        public void OnDragOver(DirectionalDropArea dropArea, DragEventArgs e)
+        {
+            if (Info is DirectoryInfo && e.Data.GetDataPresent(typeof(WorkspaceItemNode)))
+            {
+                e.Effects = DragDropEffects.Move;
+            }
+        }
+
+        public void OnDragLeave(DirectionalDropArea dropArea, DragEventArgs e)
+        {
+            if (Info is DirectoryInfo && e.Data.GetDataPresent(typeof(WorkspaceItemNode)))
+            {
+                e.Effects = DragDropEffects.Move;
+            }
+        }
+
+        public void OnDrop(DirectionalDropArea dropArea, DragEventArgs e)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            if (e.Data.GetDataPresent(typeof(WorkspaceItemNode)))
+            {
+                var node = e.Data.GetData(typeof(WorkspaceItemNode)) as WorkspaceItemNode;
+                DTE dte = VS.GetRequiredService<DTE, DTE>();
+
+                if (dte.Solution.FindProjectItem(node.Info.FullName) != null)
+                {
+                    VS.MessageBox.ShowError("You cannot move a file that is part of a project");
+                    return;
+                }
+
+                if (node?.Info is FileInfo file)
+                {
+                    file.MoveTo(Path.Combine(Info.FullName, file.Name));
+                }
+                else if (node?.Info is DirectoryInfo dir)
+                {
+                    dir.MoveTo(Path.Combine(Info.FullName, dir.Name));
+                }
+
+                e.Handled = true;
+            }
         }
     }
 }
