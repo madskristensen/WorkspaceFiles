@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using MAB.DotIgnore;
 
 namespace WorkspaceFiles
 {
@@ -9,12 +10,15 @@ namespace WorkspaceFiles
     {
         private readonly ObservableCollection<WorkspaceItemNode> _innerItems = [];
         private bool _disposed = false;
+        private IgnoreList _ignoreList;
         private readonly DirectoryInfo _info;
 
         public WorkspaceRootNode(DirectoryInfo info)
         {
             _info = info;
             General.Saved += OnSettingsSaved;
+
+            _ignoreList = GetIgnore(info.FullName);
         }
 
         private void OnSettingsSaved(General general)
@@ -48,7 +52,7 @@ namespace WorkspaceFiles
             if (General.Instance.Enabled)
             {
                 _innerItems.Clear();
-                _innerItems.Add(new WorkspaceItemNode(this, _info));
+                _innerItems.Add(new WorkspaceItemNode(this, _info, _ignoreList));
                 RaisePropertyChanged(nameof(HasItems));
             }
             else if (_innerItems.Count > 0)
@@ -56,6 +60,18 @@ namespace WorkspaceFiles
                 DisposeChildren();
                 RaisePropertyChanged(nameof(HasItems));
             }
+        }
+
+        private IgnoreList GetIgnore(string root)
+        {
+            string ignoreFile = Path.Combine(root, ".gitignore");
+
+            if (File.Exists(ignoreFile))
+            {
+                return new IgnoreList(ignoreFile);
+            }
+
+            return null;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

@@ -104,7 +104,7 @@ namespace WorkspaceFiles
             {
                 IVsHierarchyItemIdentity identity = hierarchyItem.HierarchyIdentity;
 
-                return identity.Hierarchy is IVsSolution && identity.ItemID == (uint)VSConstants.VSITEMID.Root;
+                return identity?.Hierarchy is IVsSolution && identity.ItemID == (uint)VSConstants.VSITEMID.Root;
             }
 
             return false;

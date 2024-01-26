@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using EnvDTE;
+using MAB.DotIgnore;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Imaging.Interop;
@@ -27,13 +28,15 @@ namespace WorkspaceFiles
         IDisposable,
         IRefreshPattern,
         IDragDropSourcePattern,
-        IDragDropTargetPattern
+        IDragDropTargetPattern,
+        IRenamePattern
     {
         private readonly BulkObservableCollection<WorkspaceItemNode> _innerItems = [];
         private string _text;
         private bool _isCut;
         private FileSystemWatcher _watcher;
         private bool _isDisposed;
+        private readonly IgnoreList _ignoreList;
         private static readonly HashSet<Type> _supportedPatterns =
         [
             typeof(ITreeDisplayItem),
@@ -44,16 +47,28 @@ namespace WorkspaceFiles
             typeof(IRefreshPattern),
             typeof(IDragDropSourcePattern),
             typeof(IDragDropTargetPattern),
+            typeof(IRenamePattern),
         ];
 
-        public WorkspaceItemNode(object parent, FileSystemInfo info)
+        public WorkspaceItemNode(object parent, FileSystemInfo info, IgnoreList ignoreList)
         {
+            _ignoreList = ignoreList;
+
             SourceItem = parent; ;
             HasItems = info is not FileInfo;
 
             Info = info;
             Type = parent is WorkspaceRootNode ? WorkspaceItemType.Root : info is FileInfo ? WorkspaceItemType.File : WorkspaceItemType.Folder;
             _text = Type == WorkspaceItemType.Root ? "File Explorer" : Info.Name;
+
+            if (info is FileInfo file)
+            {
+                IsCut = _ignoreList?.IsIgnored(file) == true;
+            }
+            else if (info is DirectoryInfo dir)
+            {
+                IsCut = _ignoreList?.IsIgnored(dir) == true;
+            }
         }
 
         public WorkspaceItemType Type { get; }
@@ -90,7 +105,7 @@ namespace WorkspaceFiles
             }
         }
 
-        public string ToolTipText => "";
+        public string ToolTipText => IsCut ? "File is matching a pattern in the .gitignore file" : "";
 
         public string StateToolTipText => "";
 
@@ -172,13 +187,13 @@ namespace WorkspaceFiles
             // Second, add the new items.
             if (Info is FileInfo file)
             {
-                _innerItems.Add(new WorkspaceItemNode(this, file));
+                _innerItems.Add(new WorkspaceItemNode(this, file, _ignoreList));
             }
             else if (Info is DirectoryInfo dir)
             {
                 foreach (FileSystemInfo item in dir.EnumerateFileSystemInfos().OrderBy(i => i is FileInfo))
                 {
-                    _innerItems.Add(new WorkspaceItemNode(this, item));
+                    _innerItems.Add(new WorkspaceItemNode(this, item, _ignoreList));
                 }
             }
 
@@ -200,6 +215,11 @@ namespace WorkspaceFiles
 
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
+            if (e.Name.Contains('~') || e.Name.IndexOf(".tmp", StringComparison.OrdinalIgnoreCase) > -1) // temp files created by VS and deleted immediately after
+            {
+                return;
+            }
+
             WorkspaceItemNode item = _innerItems.FirstOrDefault(i => e.OldFullPath == i.Info.FullName);
 
             if (item != null)
@@ -237,6 +257,11 @@ namespace WorkspaceFiles
 
         private void OnCreated(object sender, FileSystemEventArgs e)
         {
+            if (e.Name.Contains('~') || e.Name.IndexOf(".tmp", StringComparison.OrdinalIgnoreCase) > -1) // temp files created by VS and deleted immediately after
+            {
+                return;
+            }
+
             FileSystemInfo info = File.Exists(e.FullPath) ? new FileInfo(e.FullPath) : new DirectoryInfo(e.FullPath);
 
             ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
@@ -244,7 +269,7 @@ namespace WorkspaceFiles
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
                 _innerItems.BeginBulkOperation();
-                _innerItems.Add(new WorkspaceItemNode(this, info));
+                _innerItems.Add(new WorkspaceItemNode(this, info, _ignoreList));
 
                 WorkspaceItemNode[] items = _innerItems.OrderBy(i => i.Text).OrderBy(i => i.Info is FileInfo).ToArray();
 
@@ -334,6 +359,8 @@ namespace WorkspaceFiles
 
         }
 
+        // IDragDropSourcePattern
+
         public DirectionalDropArea SupportedAreas => DirectionalDropArea.On;
 
         public void OnDragEnter(DirectionalDropArea dropArea, DragEventArgs e)
@@ -385,6 +412,33 @@ namespace WorkspaceFiles
                 }
 
                 e.Handled = true;
+            }
+        }
+
+        // IRenamePattern
+
+        public bool CanRename => Type != WorkspaceItemType.Root;
+
+        public IRenameItemTransaction BeginRename(object container, Func<IRenameItemTransaction, IRenameItemValidationResult> validator)
+        {
+            return new RenameTransaction(this, container, validator);
+        }
+
+        private class RenameTransaction : RenameItemTransaction
+        {
+            public RenameTransaction(WorkspaceItemNode namingRule, object container, Func<IRenameItemTransaction, IRenameItemValidationResult> validator)
+                : base(namingRule, container, validator)
+            {
+                RenameLabel = namingRule.Text;
+                Completed += (s, e) =>
+                {
+                    namingRule.Text = RenameLabel;
+                };
+            }
+
+            public override void Commit(RenameItemCompletionFocusBehavior completionFocusBehavior)
+            {
+                base.Commit(completionFocusBehavior);
             }
         }
     }
