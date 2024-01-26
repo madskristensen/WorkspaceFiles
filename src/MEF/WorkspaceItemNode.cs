@@ -105,11 +105,11 @@ namespace WorkspaceFiles
             }
         }
 
-        public string ToolTipText => IsCut ? "File is matching a pattern in the .gitignore file" : "";
+        public string ToolTipText => "";
 
         public string StateToolTipText => "";
 
-        public object ToolTipContent => null;
+        public object ToolTipContent => IsCut ? "File is matching a pattern in the .gitignore file" : null;
 
         public FontWeight FontWeight => FontWeights.Normal;
 
@@ -193,7 +193,10 @@ namespace WorkspaceFiles
             {
                 foreach (FileSystemInfo item in dir.EnumerateFileSystemInfos().OrderBy(i => i is FileInfo))
                 {
-                    _innerItems.Add(new WorkspaceItemNode(this, item, _ignoreList));
+                    if (item.Name != ".git") // ignore .git folder for safety reasons
+                    {
+                        _innerItems.Add(new WorkspaceItemNode(this, item, _ignoreList));
+                    }
                 }
             }
 
