@@ -28,7 +28,7 @@ namespace WorkspaceFiles
             
             // Setup ratings prompt
             General options = await General.GetLiveInstanceAsync();
-            RatingPrompt prompt = new("MadsKristensen.WorkspaceBrowser", Vsix.Name, options);
+            RatingPrompt prompt = new("MadsKristensen.WorkflowBrowser", Vsix.Name, options);
             prompt.RegisterSuccessfulUsage();
         }
     }
