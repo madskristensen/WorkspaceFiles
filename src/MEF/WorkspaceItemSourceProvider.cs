@@ -52,10 +52,10 @@ namespace WorkspaceFiles
 
             if (relationshipName == KnownRelationships.Contains)
             {
-                if (IsSolutionNode(item) && TryGetRoot(out DirectoryInfo root))
+                if (IsSolutionNode(item))
                 {
                     _rootNode?.Dispose();
-                    _rootNode = new WorkspaceRootNode(root);
+                    _rootNode = new WorkspaceRootNode();
                     return _rootNode;
                 }
                 else if (item is IAttachedCollectionSource source and (WorkspaceRootNode or WorkspaceItemNode))

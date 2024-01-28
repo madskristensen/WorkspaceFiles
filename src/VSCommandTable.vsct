@@ -24,7 +24,7 @@
         </Strings>
       </Menu>
     </Menus>
-    
+
     <Groups>
       <Group guid="WorkspaceFiles" id="RootContextMenuGroup" priority="0x0600">
         <Parent guid="WorkspaceFiles" id="RootContextMenu"/>
@@ -53,7 +53,17 @@
           <LocCanonicalName>.FileExplorer.Delete</LocCanonicalName>
         </Strings>
       </Button>
-      
+
+      <Button guid="WorkspaceFiles" id="Rename" priority="0x0200" type="Button">
+        <Parent guid="WorkspaceFiles" id="FileContextMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="Rename" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>&amp;Rename</ButtonText>
+          <LocCanonicalName>.FileExplorer.Rename</LocCanonicalName>
+        </Strings>
+      </Button>
+
       <Button guid="WorkspaceFiles" id="OpenInExplorer" priority="0x0120" type="Button">
         <Parent guid="WorkspaceFiles" id="RootContextMenuGroup" />
         <Icon guid="ImageCatalogGuid" id="Open" />
@@ -96,6 +106,25 @@
           <LocCanonicalName>.FileExplorer.Enable</LocCanonicalName>
         </Strings>
       </Button>
+
+      <Button guid="WorkspaceFiles" id="AddFolder" priority="0x0900" type="Button">
+        <Parent guid="VSMainMenu" id="SolutionNode.AddGroup.AddMenu.AddItemGroup" />
+        <Icon guid="ImageCatalogGuid" id="OpenProjectFolder" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>&amp;Add Physical Folder</ButtonText>
+          <LocCanonicalName>.FileExplorer.AddFolder</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="WorkspaceFiles" id="RemoveFolder" priority="0x0900" type="Button">
+        <Parent guid="WorkspaceFiles" id="RootContextMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="RemoveMapping" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>&amp;Remove</ButtonText>
+          <LocCanonicalName>.FileExplorer.RemoveFolder</LocCanonicalName>
+        </Strings>
+      </Button>
     </Buttons>
   </Commands>
 
@@ -117,6 +146,9 @@
     <CommandPlacement guid="WorkspaceFiles" id="CopyFullPath" priority="100">
       <Parent guid="WorkspaceFiles" id="RootContextMenuGroup" />
     </CommandPlacement>
+    <CommandPlacement guid="WorkspaceFiles" id="Rename" priority="100">
+      <Parent guid="WorkspaceFiles" id="FolderContextMenuGroup" />
+    </CommandPlacement>
   </CommandPlacements>
 
   <Symbols>
@@ -132,13 +164,16 @@
       <IDSymbol name="FolderContextMenuGroup" value="0x030" />
       <IDSymbol name="FileOpenGroup" value="0x040" />
       <IDSymbol name="SolutionToolbarGroup" value="0x050"/>
-      
+
       <!--Commands-->
       <IDSymbol name="Delete" value="0x0200" />
       <IDSymbol name="OpenInExplorer" value="0x0300" />
       <IDSymbol name="ToggleWorkspace" value="0x0400" />
       <IDSymbol name="CopyFullPath" value="0x0500" />
       <IDSymbol name="OpenInDefaultProgram" value="0x0600" />
+      <IDSymbol name="Rename" value="0x0700" />
+      <IDSymbol name="AddFolder" value="0x0800" />
+      <IDSymbol name="RemoveFolder" value="0x0900" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

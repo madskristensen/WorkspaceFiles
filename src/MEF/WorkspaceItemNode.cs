@@ -59,7 +59,7 @@ namespace WorkspaceFiles
 
             Info = info;
             Type = parent is WorkspaceRootNode ? WorkspaceItemType.Root : info is FileInfo ? WorkspaceItemType.File : WorkspaceItemType.Folder;
-            _text = Type == WorkspaceItemType.Root ? "File Explorer" : Info.Name;
+            _text = Info.Name;// Type == WorkspaceItemType.Root ? "File Explorer" : Info.Name;
 
             if (info is FileInfo file)
             {

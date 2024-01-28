@@ -33,5 +33,8 @@ namespace WorkspaceFiles
         public const int ToggleWorkspace = 0x0400;
         public const int CopyFullPath = 0x0500;
         public const int OpenInDefaultProgram = 0x0600;
+        public const int Rename = 0x0700;
+        public const int AddFolder = 0x0800;
+        public const int RemoveFolder = 0x0900;
     }
 }

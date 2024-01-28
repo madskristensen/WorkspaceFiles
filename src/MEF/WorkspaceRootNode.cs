@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -10,15 +11,21 @@ namespace WorkspaceFiles
     {
         private readonly ObservableCollection<WorkspaceItemNode> _innerItems = [];
         private bool _disposed = false;
-        private IgnoreList _ignoreList;
-        private readonly DirectoryInfo _info;
+        private readonly List<IDirectoryProvider> _providers = [new LocalSolutionProvider()];
 
-        public WorkspaceRootNode(DirectoryInfo info)
+        public WorkspaceRootNode()
         {
-            _info = info;
             General.Saved += OnSettingsSaved;
 
-            _ignoreList = GetIgnore(info.FullName);
+            foreach (IDirectoryProvider provider in _providers)
+            {
+                provider.DirectoryChanged += OnDirectoryChanged;
+            }
+        }
+
+        private void OnDirectoryChanged(object sender, FileSystemEventArgs e)
+        {
+            BuildAllProvider();
         }
 
         private void OnSettingsSaved(General general)
@@ -26,7 +33,7 @@ namespace WorkspaceFiles
             ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                BuildInnerItems();
+                BuildAllProvider();
             }).FireAndForget();
         }
 
@@ -40,38 +47,36 @@ namespace WorkspaceFiles
             {
                 if (_innerItems.Count == 0)
                 {
-                    BuildInnerItems();
+                    BuildAllProvider();
                 }
 
                 return _innerItems;
             }
         }
 
-        private void BuildInnerItems()
+        private void BuildAllProvider()
         {
-            if (General.Instance.Enabled)
+            _innerItems.Clear();
+
+            foreach (IDirectoryProvider item in _providers)
             {
-                _innerItems.Clear();
-                _innerItems.Add(new WorkspaceItemNode(this, _info, _ignoreList));
-                RaisePropertyChanged(nameof(HasItems));
+                foreach (DirectoryInfo dir in item.GetDirectories())
+                {
+                    var ignoreList = GetIgnore(dir.FullName);
+
+                    
+                    _innerItems.Add(new WorkspaceItemNode(this, dir, ignoreList));
+                }
             }
-            else if (_innerItems.Count > 0)
-            {
-                DisposeChildren();
-                RaisePropertyChanged(nameof(HasItems));
-            }
+
+                    RaisePropertyChanged(nameof(HasItems));
         }
 
         private IgnoreList GetIgnore(string root)
         {
-            string ignoreFile = Path.Combine(root, ".gitignore");
+            var ignoreFile = Path.Combine(root, ".gitignore");
 
-            if (File.Exists(ignoreFile))
-            {
-                return new IgnoreList(ignoreFile);
-            }
-
-            return null;
+            return File.Exists(ignoreFile) ? new IgnoreList(ignoreFile) : null;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -87,6 +92,12 @@ namespace WorkspaceFiles
             {
                 General.Saved -= OnSettingsSaved;
                 DisposeChildren();
+
+                foreach (IDirectoryProvider provider in _providers)
+                {
+                    provider.DirectoryChanged -= OnDirectoryChanged;
+                    provider.Dispose();
+                }
             }
 
             _disposed = true;
