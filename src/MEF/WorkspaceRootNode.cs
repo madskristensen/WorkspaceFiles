@@ -21,7 +21,7 @@ namespace WorkspaceFiles
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             _dte = VS.GetRequiredService<DTE, DTE>();
-            _solutionDir = Path.GetDirectoryName(_dte.Solution?.FullName).TrimEnd('\\') + "\\";
+            _solutionDir = Path.GetDirectoryName(_dte.Solution?.FullName).TrimEnd('\\') + '\\';
 
             General.Saved += OnSettingsSaved;
             AddFolderCommand.AddFolderRequest += OnAddFolderRequested;
@@ -41,7 +41,7 @@ namespace WorkspaceFiles
 
         private void OnAddFolderRequested(object sender, string directory)
         {
-            var info = new DirectoryInfo(directory);
+            var info = new DirectoryInfo(directory.TrimEnd('\\') + '\\');
 
             if (!_directories.Contains(info))
             {
@@ -63,7 +63,7 @@ namespace WorkspaceFiles
 
         public object SourceItem => this;
 
-        public bool HasItems => General.Instance.Enabled;
+        public bool HasItems => General.Instance.Enabled || _directories?.Any() == true;
 
         public IEnumerable Items
         {
