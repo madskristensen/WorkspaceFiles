@@ -170,9 +170,22 @@ namespace WorkspaceFiles
 
         private IgnoreList GetIgnore(string root)
         {
-            var ignoreFile = Path.Combine(root, ".gitignore");
+            var info = new DirectoryInfo(root);
 
-            return File.Exists(ignoreFile) ? new IgnoreList(ignoreFile) : null;
+            do
+            {
+                var ignoreFile = Path.Combine(info.FullName, ".gitignore");
+
+                if (File.Exists(ignoreFile))
+                {
+                    return new IgnoreList(ignoreFile);
+                }
+
+                info = info.Parent;
+
+            } while (info != null);
+
+            return null;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

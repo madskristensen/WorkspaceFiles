@@ -17,6 +17,10 @@ Gives access to all files and folders from the file system under the repo- or so
 
 ![Animation](art/animation.gif) 
 
+Add any folder you want by right-clicking the solution node and select **Add > Physical Folder**.
+
+![Add Physical Folder](art/add-physical-folder.png)
+
 ## How can I help?
 If you enjoy using the extension, please give it a ★★★★★ rating on the [Visual Studio Marketplace][marketplace].
 

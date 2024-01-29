@@ -133,7 +133,7 @@ namespace WorkspaceFiles
             get
             {
                 ThreadHelper.ThrowIfNotOnUIThread();
-                return Type == WorkspaceItemType.Root ? KnownMonikers.RemoteFolder : Info.GetIcon(false);
+                return Type == WorkspaceItemType.Root ? KnownMonikers.LinkedFolderClosed : Info.GetIcon(false);
             }
         }
 
@@ -142,7 +142,7 @@ namespace WorkspaceFiles
             get
             {
                 ThreadHelper.ThrowIfNotOnUIThread();
-                return Type == WorkspaceItemType.Root ? KnownMonikers.RemoteFolderOpen : Info.GetIcon(true);
+                return Type == WorkspaceItemType.Root ? KnownMonikers.LinkedFolderOpened : Info.GetIcon(true);
             }
         }
 
