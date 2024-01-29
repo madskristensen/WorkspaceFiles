@@ -54,8 +54,6 @@
     <Compile Include="Commands\OpenInExplorerCommand.cs" />
     <Compile Include="Commands\DeleteCommand.cs" />
     <Compile Include="IconMapper.cs" />
-    <Compile Include="IDirectoryProvider.cs" />
-    <Compile Include="LocalSolutionProvider.cs" />
     <Compile Include="MEF\WorkspaceItemContextMenuController.cs" />
     <Compile Include="MEF\WorkspaceItemNodeDragDropSourceController.cs" />
     <Compile Include="MEF\WorkspaceItemType.cs" />
