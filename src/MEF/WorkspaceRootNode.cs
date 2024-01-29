@@ -12,11 +12,17 @@ namespace WorkspaceFiles
     internal class WorkspaceRootNode : IAttachedCollectionSource, INotifyPropertyChanged, IDisposable
     {
         private readonly ObservableCollection<WorkspaceItemNode> _innerItems = [];
+        private readonly DTE _dte;
+        private readonly string _solutionDir;
         private bool _disposed = false;
         private List<DirectoryInfo> _directories;
 
         public WorkspaceRootNode()
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            _dte = VS.GetRequiredService<DTE, DTE>();
+            _solutionDir = Path.GetDirectoryName(_dte.Solution?.FullName).TrimEnd('\\') + "\\";
+
             General.Saved += OnSettingsSaved;
             AddFolderCommand.AddFolderRequest += OnAddFolderRequested;
             RemoveFolderCommand.RemoveFolderRequest += OnRemoveFolderRequested;
@@ -89,11 +95,10 @@ namespace WorkspaceFiles
         private void UpdateDirectories()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            DTE dte = VS.GetRequiredService<DTE, DTE>();
 
             _directories = [];
 
-            if (!dte.Solution.Globals.VariableExists["FileExplorer"])
+            if (!_dte.Solution.Globals.VariableExists["FileExplorer"])
             {
                 if (General.Instance.Enabled && TryGetRoot(out DirectoryInfo dir))
                 {
@@ -102,14 +107,13 @@ namespace WorkspaceFiles
             }
             else
             {
-                var dirs = dte.Solution.Globals["FileExplorer"].ToString().Split('|');
-                var slnFolder = Path.GetDirectoryName(dte.Solution.FullName);
+                var dirs = _dte.Solution.Globals["FileExplorer"].ToString().Split('|');
 
                 foreach (var dir in dirs)
                 {
                     try
                     {
-                        var info = new DirectoryInfo(Path.Combine(slnFolder, dir));
+                        var info = new DirectoryInfo(Path.Combine(_solutionDir, dir));
                         if (info.Exists)
                         {
                             _directories.Add(info);
@@ -128,10 +132,9 @@ namespace WorkspaceFiles
             try
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                var raw = string.Join("|", _directories.Select(d => d.FullName));
-                DTE dte = await VS.GetRequiredServiceAsync<DTE, DTE>();
-                dte.Solution.Globals["FileExplorer"] = raw;
-                dte.Solution.Globals.VariablePersists["FileExplorer"] = true;
+                var raw = string.Join("|", _directories.Select(d => PackageUtilities.MakeRelative(_solutionDir, d.FullName)));
+                _dte.Solution.Globals["FileExplorer"] = raw;
+                _dte.Solution.Globals.VariablePersists["FileExplorer"] = _directories.Any();
             }
             catch (Exception ex)
             {
@@ -139,18 +142,16 @@ namespace WorkspaceFiles
             }
         }
 
-        private static bool TryGetRoot(out DirectoryInfo solRoot)
+        private bool TryGetRoot(out DirectoryInfo solRoot)
         {
             solRoot = null;
-            Community.VisualStudio.Toolkit.Solution solution = VS.Solutions.GetCurrentSolution();
 
-            if (string.IsNullOrEmpty(solution?.FullPath))
+            if (string.IsNullOrEmpty(_solutionDir))
             {
                 return false;
             }
 
-            solRoot = new DirectoryInfo(Path.GetDirectoryName(solution.FullPath));
-            DirectoryInfo currentRoot = new(solRoot.FullName);
+            DirectoryInfo currentRoot = new(_solutionDir);
 
             while (currentRoot != null)
             {
