@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Windows.Forms;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 
 namespace WorkspaceFiles
@@ -21,6 +22,10 @@ namespace WorkspaceFiles
                     {
                         VS.Documents.OpenAsync(item.Info.FullName).FireAndForget();
                     }
+                }
+                else
+                {
+                    SendKeys.Send("{RIGHT}");
                 }
             }
 
