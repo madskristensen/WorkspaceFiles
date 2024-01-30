@@ -103,8 +103,8 @@ namespace WorkspaceFiles
             if (item is IVsHierarchyItem hierarchyItem)
             {
                 IVsHierarchyItemIdentity identity = hierarchyItem.HierarchyIdentity;
-
-                return identity?.Hierarchy is IVsSolution && identity.ItemID == (uint)VSConstants.VSITEMID.Root;
+                
+                return identity?.Hierarchy is IVsSolution sol && identity.ItemID == (uint)VSConstants.VSITEMID.Root && VS.Solutions.GetCurrentSolution().FullPath != null;
             }
 
             return false;
