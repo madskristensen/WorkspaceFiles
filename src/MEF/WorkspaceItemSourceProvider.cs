@@ -52,48 +52,26 @@ namespace WorkspaceFiles
 
             if (relationshipName == KnownRelationships.Contains)
             {
-                if (IsSolutionNode(item))
+                try
                 {
-                    _rootNode?.Dispose();
-                    _rootNode = new WorkspaceRootNode();
-                    return _rootNode;
+                    if (IsSolutionNode(item))
+                    {
+                        _rootNode?.Dispose();
+                        _rootNode = new WorkspaceRootNode();
+                        return _rootNode;
+                    }
+                    else if (item is IAttachedCollectionSource source and (WorkspaceRootNode or WorkspaceItemNode))
+                    {
+                        return source;
+                    }
                 }
-                else if (item is IAttachedCollectionSource source and (WorkspaceRootNode or WorkspaceItemNode))
+                catch (Exception ex)
                 {
-                    return source;
+                    ex.LogAsync().FireAndForget();
                 }
             }
 
             return null;
-        }
-
-        private static bool TryGetRoot(out DirectoryInfo solRoot)
-        {
-            solRoot = null;
-            Solution solution = VS.Solutions.GetCurrentSolution();
-
-            if (string.IsNullOrEmpty(solution?.FullPath))
-            {
-                return false;
-            }
-
-            solRoot = new DirectoryInfo(Path.GetDirectoryName(solution.FullPath));
-            DirectoryInfo currentRoot = new(solRoot.FullName);
-
-            while (currentRoot != null)
-            {
-                var dotGit = Path.Combine(currentRoot.FullName, ".git");
-
-                if (Directory.Exists(dotGit))
-                {
-                    solRoot = currentRoot;
-                    return true;
-                }
-
-                currentRoot = currentRoot.Parent;
-            }
-
-            return true;
         }
 
         private bool IsSolutionNode(object item)
