@@ -56,6 +56,7 @@
     <Compile Include="IconMapper.cs" />
     <Compile Include="MEF\WorkspaceItemContextMenuController.cs" />
     <Compile Include="MEF\WorkspaceItemNodeDragDropSourceController.cs" />
+    <Compile Include="MEF\WorkspaceItemNodeTooltip.cs" />
     <Compile Include="MEF\WorkspaceItemType.cs" />
     <Compile Include="MEF\WorkspaceRootNode.cs" />
     <Compile Include="Options\General.cs" />

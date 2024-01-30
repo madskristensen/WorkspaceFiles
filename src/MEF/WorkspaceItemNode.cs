@@ -11,6 +11,7 @@ using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Imaging.Interop;
 using Microsoft.VisualStudio.Language.Intellisense;
+using WorkspaceFiles.MEF;
 
 namespace WorkspaceFiles
 {
@@ -109,7 +110,7 @@ namespace WorkspaceFiles
 
         public string StateToolTipText => "";
 
-        public object ToolTipContent => IsCut ? "File is matching a pattern in the .gitignore file" : null;
+        public object ToolTipContent => WorkspaceItemNodeTooltip.GetTooltip(this);
 
         public FontWeight FontWeight => FontWeights.Normal;
 
