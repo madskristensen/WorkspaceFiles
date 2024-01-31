@@ -153,6 +153,13 @@ namespace WorkspaceFiles
 
             DirectoryInfo currentRoot = new(_solutionDir);
 
+            if (currentRoot == null)
+            {
+                return false;
+            }
+
+            solRoot = currentRoot;
+
             while (currentRoot != null)
             {
                 var dotGit = Path.Combine(currentRoot.FullName, ".git");
