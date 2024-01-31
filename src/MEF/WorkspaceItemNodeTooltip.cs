@@ -17,14 +17,22 @@ namespace WorkspaceFiles.MEF
 
             FileSystemInfo info = node.Info;
 
-            return File.Exists(info.FullName) && IsImage(info.Name)
-                ? new Image
+            if (File.Exists(info.FullName) && IsImage(info.Name))
+            {
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.UriSource = new Uri(info.FullName);
+                bitmap.EndInit();
+
+                return new Image
                 {
-                    MaxHeight = 120,
-                    MaxWidth = 120,
-                    Source = new BitmapImage(new Uri(info.FullName))
-                }
-                : null;
+                    MaxHeight = 100,
+                    MaxWidth = 100,
+                    Source = bitmap
+                };
+            }
+            return null;
         }
 
         private static bool IsImage(string fileName)
