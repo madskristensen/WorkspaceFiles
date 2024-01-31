@@ -173,6 +173,8 @@ namespace WorkspaceFiles
                 currentRoot = currentRoot.Parent;
             }
 
+            solRoot = new(_solutionDir);
+
             return true;
         }
 
