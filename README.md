@@ -17,7 +17,7 @@ Gives access to all files and folders from the file system under the repo- or so
 
 ![Animation](art/animation.gif) 
 
-Add any folder you want by right-clicking the solution node and select **Add > Physical Folder**.
+Add any folder you want by right-clicking the solution node and select **Add > Existing Folder**.
 
 ![Add Physical Folder](art/add-physical-folder.png)
 

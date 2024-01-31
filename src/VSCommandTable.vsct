@@ -107,13 +107,13 @@
         </Strings>
       </Button>
 
-      <Button guid="WorkspaceFiles" id="AddFolder" priority="0x0900" type="Button">
+      <Button guid="WorkspaceFiles" id="AddFolder" priority="0x0200" type="Button">
         <Parent guid="VSMainMenu" id="SolutionNode.AddGroup.AddMenu.AddItemGroup" />
-        <Icon guid="ImageCatalogGuid" id="LinkedFolderClosed" />
+        <Icon guid="ImageCatalogGuid" id="AddFolder" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
-          <ButtonText>&amp;Physical Folder</ButtonText>
-          <LocCanonicalName>.FileExplorer.AddPhysicalFolder</LocCanonicalName>
+          <ButtonText>E&amp;xisting Folder</ButtonText>
+          <LocCanonicalName>.FileExplorer.AddExistingFolder</LocCanonicalName>
         </Strings>
       </Button>
       <Button guid="WorkspaceFiles" id="RemoveFolder" priority="0x0900" type="Button">
