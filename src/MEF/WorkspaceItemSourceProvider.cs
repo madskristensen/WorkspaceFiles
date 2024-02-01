@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using Microsoft.Internal.VisualStudio.PlatformUI;
@@ -34,11 +35,11 @@ namespace WorkspaceFiles
                 yield return Relationships.Contains;
             }
 
-            //if (item is WorkspaceItemNode)
-            //{
-            //    // Given one of our nodes, we can return the item that contains it
-            //    yield return Relationships.ContainedBy;
-            //}
+            if (item is WorkspaceItemNode)
+            {
+                // Given one of our nodes, we can return the item that contains it
+                yield return Relationships.ContainedBy;
+            }
         }
 
         public IAttachedCollectionSource CreateCollectionSource(object item, string relationshipName)
@@ -50,13 +51,12 @@ namespace WorkspaceFiles
                 return null;
             }
 
-            if (relationshipName == KnownRelationships.Contains)
+            try
             {
-                try
+                if (relationshipName == KnownRelationships.Contains)
                 {
                     if (IsSolutionNode(item))
                     {
-                        _rootNode?.Dispose();
                         _rootNode = new WorkspaceRootNode();
                         return _rootNode;
                     }
@@ -64,11 +64,19 @@ namespace WorkspaceFiles
                     {
                         return source;
                     }
+
                 }
-                catch (Exception ex)
+                else if (relationshipName == KnownRelationships.ContainedBy)
                 {
-                    ex.LogAsync().FireAndForget();
+                    if (item is IAttachedCollectionSource source and (WorkspaceRootNode or WorkspaceItemNode))
+                    {
+                        return source.SourceItem as IAttachedCollectionSource;
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                ex.LogAsync().FireAndForget();
             }
 
             return null;
@@ -81,8 +89,8 @@ namespace WorkspaceFiles
             if (item is IVsHierarchyItem hierarchyItem)
             {
                 IVsHierarchyItemIdentity identity = hierarchyItem.HierarchyIdentity;
-                
-                return identity?.Hierarchy is IVsSolution sol && identity.ItemID == (uint)VSConstants.VSITEMID.Root && VS.Solutions.GetCurrentSolution().FullPath != null;
+
+                return identity?.Hierarchy is IVsSolution && identity.ItemID == (uint)VSConstants.VSITEMID.Root && VS.Solutions.GetCurrentSolution().FullPath != null;
             }
 
             return false;
