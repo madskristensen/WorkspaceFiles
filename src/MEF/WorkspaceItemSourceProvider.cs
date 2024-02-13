@@ -1,7 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.IO;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -11,6 +9,7 @@ namespace WorkspaceFiles
 {
     [Export(typeof(IAttachedCollectionSourceProvider))]
     [Name(nameof(WorkspaceItemNode))]
+    [Order(Before = HierarchyItemsProviderNames.Contains)]
     internal class WorkspaceItemSourceProvider : IAttachedCollectionSourceProvider
     {
         private WorkspaceRootNode _rootNode;
