@@ -125,6 +125,27 @@
           <LocCanonicalName>.FileExplorer.RemoveFolder</LocCanonicalName>
         </Strings>
       </Button>
+
+      <Button guid="WorkspaceFiles" id="NewFolder" priority="0x1000" type="Button">
+        <Parent guid="WorkspaceFiles" id="RootContextMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="NewFolder" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>&amp;New Folder</ButtonText>
+          <LocCanonicalName>.FileExplorer.NewFolder</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="WorkspaceFiles" id="NewFile" priority="0x1001" type="Button">
+        <Parent guid="WorkspaceFiles" id="RootContextMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="NewDocument" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>&amp;New File</ButtonText>
+          <LocCanonicalName>.FileExplorer.NewFile</LocCanonicalName>
+        </Strings>
+      </Button>
+
     </Buttons>
   </Commands>
 
@@ -147,6 +168,12 @@
       <Parent guid="WorkspaceFiles" id="RootContextMenuGroup" />
     </CommandPlacement>
     <CommandPlacement guid="WorkspaceFiles" id="Rename" priority="100">
+      <Parent guid="WorkspaceFiles" id="FolderContextMenuGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="WorkspaceFiles" id="NewFolder" priority="100">
+      <Parent guid="WorkspaceFiles" id="FolderContextMenuGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="WorkspaceFiles" id="NewFile" priority="100">
       <Parent guid="WorkspaceFiles" id="FolderContextMenuGroup" />
     </CommandPlacement>
   </CommandPlacements>
@@ -174,6 +201,8 @@
       <IDSymbol name="Rename" value="0x0700" />
       <IDSymbol name="AddFolder" value="0x0800" />
       <IDSymbol name="RemoveFolder" value="0x0900" />
+      <IDSymbol name="NewFolder" value="0x1000" />
+      <IDSymbol name="NewFile" value="0x1001" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

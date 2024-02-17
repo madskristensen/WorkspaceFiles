@@ -45,6 +45,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Commands\NewFileCommand.cs" />
+    <Compile Include="Commands\NewFolderCommand.cs" />
     <Compile Include="Commands\RemoveFolderCommand.cs" />
     <Compile Include="Commands\AddFolderCommand.cs" />
     <Compile Include="Commands\RenameCommand.cs" />
