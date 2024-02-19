@@ -217,6 +217,18 @@ namespace WorkspaceFiles
             RaisePropertyChanged(nameof(HasItems));
         }
 
+        /// <summary>
+        /// Sort items in the same way as the file system.
+        /// Directories first, then files, and then sorted by name. 
+        /// </summary>
+        void SortAsFileSystem(BulkObservableCollection<WorkspaceItemNode> collection)
+        {
+            // Workaround since the BulkObservableCollection does not support sorting.
+            WorkspaceItemNode[] tmp = collection.OrderBy(i => i.Text).OrderBy(i => i.Info is FileInfo).ToArray();
+            _innerItems.Clear();
+            _innerItems.AddRange(tmp);
+        }
+
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
             if (e.Name.Contains('~') || e.Name.IndexOf(".tmp", StringComparison.OrdinalIgnoreCase) > -1) // temp files created by VS and deleted immediately after
@@ -228,17 +240,28 @@ namespace WorkspaceFiles
 
             if (item != null)
             {
+                // Update the existing item with the new name and path.
                 ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
                 {
                     await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                     item.Info = item.Info is FileInfo ? new FileInfo(e.FullPath) : new DirectoryInfo(e.FullPath);
                     item.Text = e.Name;
 
-                    WorkspaceItemNode[] items = _innerItems.OrderBy(i => i.Text).OrderBy(i => i.Info is FileInfo).ToArray();
                     _innerItems.BeginBulkOperation();
-                    _innerItems.Clear();
-                    _innerItems.AddRange(items);
+                    SortAsFileSystem(_innerItems);
                     _innerItems.EndBulkOperation();
+                }).FireAndForget();
+            }
+            else
+            {
+                // Handling cases where VS temp files are renamed to the actual file name. Cases like this happens when a file is modified and saved.
+                // In this case the OnDeleted event is fired for the old file and the OnRenamed event is fired for the temp file.
+                // Since the OnDeleted event can be fired first, the item is removed from the collection and the OnRenamed event is ignored.
+                FileSystemInfo info = File.Exists(e.FullPath) ? new FileInfo(e.FullPath) : new DirectoryInfo(e.FullPath);
+
+                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+                {
+                    await CreateItemAsync(info);
                 }).FireAndForget();
             }
         }
@@ -270,19 +293,20 @@ namespace WorkspaceFiles
 
             ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
             {
-                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
-                _innerItems.BeginBulkOperation();
-                _innerItems.Add(new WorkspaceItemNode(this, info, _ignoreList));
-
-                WorkspaceItemNode[] items = _innerItems.OrderBy(i => i.Text).OrderBy(i => i.Info is FileInfo).ToArray();
-
-                _innerItems.Clear();
-                _innerItems.AddRange(items);
-                _innerItems.EndBulkOperation();
-
-                RaisePropertyChanged(nameof(HasItems));
+                await CreateItemAsync(info);
             }).FireAndForget();
+        }
+
+        private async Task CreateItemAsync(FileSystemInfo info)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            _innerItems.BeginBulkOperation();
+            _innerItems.Add(new WorkspaceItemNode(this, info, _ignoreList));
+            SortAsFileSystem(_innerItems);
+            _innerItems.EndBulkOperation();
+
+            RaisePropertyChanged(nameof(HasItems));
         }
 
         public void Dispose()
