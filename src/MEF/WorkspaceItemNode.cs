@@ -236,7 +236,12 @@ namespace WorkspaceFiles
                 return;
             }
 
-            WorkspaceItemNode item = _innerItems.FirstOrDefault(i => e.OldFullPath == i.Info.FullName);
+            WorkspaceItemNode item;
+            // Lock the items collection since it can be modified by another running thread at the same time that we received this event.
+            lock (_innerItems)
+            {
+                item = _innerItems.FirstOrDefault(i => e.OldFullPath == i.Info.FullName);
+            }
 
             if (item != null)
             {
@@ -247,9 +252,12 @@ namespace WorkspaceFiles
                     item.Info = item.Info is FileInfo ? new FileInfo(e.FullPath) : new DirectoryInfo(e.FullPath);
                     item.Text = e.Name;
 
-                    _innerItems.BeginBulkOperation();
-                    SortAsFileSystem(_innerItems);
-                    _innerItems.EndBulkOperation();
+                    lock (_innerItems)
+                    {
+                        _innerItems.BeginBulkOperation();
+                        SortAsFileSystem(_innerItems);
+                        _innerItems.EndBulkOperation();
+                    }
                 }).FireAndForget();
             }
             else
@@ -276,7 +284,12 @@ namespace WorkspaceFiles
                 {
                     await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                     item.IsCut = true;
-                    _innerItems.Remove(item);
+                    
+                    lock (_innerItems)
+                    {
+                        _innerItems.Remove(item);
+                    }
+
                     RaisePropertyChanged(nameof(HasItems));
                 }).FireAndForget();
             }
@@ -301,10 +314,22 @@ namespace WorkspaceFiles
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            _innerItems.BeginBulkOperation();
-            _innerItems.Add(new WorkspaceItemNode(this, info, _ignoreList));
-            SortAsFileSystem(_innerItems);
-            _innerItems.EndBulkOperation();
+            lock (_innerItems)
+            {
+                // Check if the item already exists in the collection.
+                // Since multiple save file events can be fired in quick succession, the item might already exist when being
+                // moved from a temp file to the actual file.
+                WorkspaceItemNode item = _innerItems.FirstOrDefault(node => node.Info.FullName == info.FullName);
+                if (item != null)
+                {
+                    return;
+                }
+
+                _innerItems.BeginBulkOperation();
+                _innerItems.Add(new WorkspaceItemNode(this, info, _ignoreList));
+                SortAsFileSystem(_innerItems);
+                _innerItems.EndBulkOperation();
+            }
 
             RaisePropertyChanged(nameof(HasItems));
         }
