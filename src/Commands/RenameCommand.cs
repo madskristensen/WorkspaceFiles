@@ -1,5 +1,6 @@
-﻿using EnvDTE;
-using Microsoft.Internal.VisualStudio.PlatformUI;
+﻿using System.IO;
+using EnvDTE;
+using Microsoft.VisualStudio.PlatformUI;
 
 namespace WorkspaceFiles
 {
@@ -8,31 +9,79 @@ namespace WorkspaceFiles
     {
         protected override void Execute(object sender, EventArgs e)
         {
-            VS.MessageBox.Show("Not implemented yet");
-            //WorkspaceItemNode item = WorkspaceItemContextMenuController.CurrentItem;
-            //if (item.CanRename)
-            //{
-            //    item.BeginRename(item, (e) =>
-            //    {
-            //        return new RenameItemValidatorResult(item.Text);
-            //    });
-            //}
-        }
+            var oldItemPath = WorkspaceItemContextMenuController.CurrentItem.Info.FullName;
+            var oldItemName = WorkspaceItemContextMenuController.CurrentItem.Info.Name;
 
-        public class RenameItemValidatorResult : IRenameItemValidationResult
-        {
-            public RenameItemValidatorResult(string previousValue)
+            var fileAttributes = File.GetAttributes(oldItemPath);
+            var isDirectory = fileAttributes.HasFlag(FileAttributes.Directory);
+
+            var result = TextInputDialog.Show(
+                "Rename File",
+                $"Enter the new name of the file for {oldItemName}.",
+                oldItemName,
+                userInput =>
+                {
+                    var OperationResult = string.Empty;
+
+                    if (!userInput.Equals(oldItemName))
+                    {
+                        var isValidName = userInput.IndexOfAny(Path.GetInvalidFileNameChars()) == -1;
+
+                        bool exists;
+
+                        if (isDirectory)
+                        {
+                            exists = Directory.Exists(Path.Combine(Directory.GetParent(oldItemPath).FullName, userInput));
+                        }
+                        else
+                        {
+                            exists = File.Exists(Path.Combine(oldItemPath, userInput));
+                        }
+
+                        if (isValidName && !exists)
+                        {
+                            return true;
+                        }
+
+                        if (exists)
+                        {
+                            OperationResult = $"{(isDirectory ? "Directory" : "File")} \"{userInput}\" already exists.";
+                        }
+                        else
+                        {
+                            OperationResult = $"Invalid {(isDirectory ? "directory" : "file")} name \"{userInput}\".";
+                        }
+                    }
+                    else
+                    {
+                        OperationResult = $"You must enter different name than current \"{userInput}\" to rename {(isDirectory ? "directory" : "file")}.";
+                    }
+
+                    VS.MessageBox.ShowWarning(OperationResult);
+
+                    return false;
+                },
+                out var newItemName
+            );
+
+            // If the user cancels the dialog, return.
+            if (!result)
             {
-                PreviousValue = previousValue;
+                return;
             }
-            public bool IsValid => true;
 
-            public string Feedback => "ostehat";
+            if (isDirectory)
+            {
+                var newFolderPath = Path.Combine(Directory.GetParent(oldItemPath).FullName, newItemName);
 
-            public string PreviousValue { get; }
+                Directory.Move(oldItemPath, newFolderPath);
+            }
+            else
+            {
+                var newFilePath = Path.Combine(Path.GetDirectoryName(oldItemPath), newItemName);
 
-            public string ProposedValue { get; }
+                File.Move(oldItemPath, newFilePath);
+            }
         }
-
     }
 }
