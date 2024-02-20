@@ -1,5 +1,6 @@
-﻿using EnvDTE;
-using Microsoft.Internal.VisualStudio.PlatformUI;
+﻿using System.IO;
+using EnvDTE;
+using Microsoft.VisualStudio.PlatformUI;
 
 namespace WorkspaceFiles
 {
@@ -8,31 +9,37 @@ namespace WorkspaceFiles
     {
         protected override void Execute(object sender, EventArgs e)
         {
-            VS.MessageBox.Show("Not implemented yet");
-            //WorkspaceItemNode item = WorkspaceItemContextMenuController.CurrentItem;
-            //if (item.CanRename)
-            //{
-            //    item.BeginRename(item, (e) =>
-            //    {
-            //        return new RenameItemValidatorResult(item.Text);
-            //    });
-            //}
+            var oldItemPath = WorkspaceItemContextMenuController.CurrentItem.Info.FullName;
+            var oldItemName = WorkspaceItemContextMenuController.CurrentItem.Info.Name;
+            var result = TextInputDialog.Show(
+                "Rename File",
+                $"Enter the new name of the file for {oldItemName}.",
+                oldItemName,
+                userInput =>
+                {
+                    if (!userInput.Equals(oldItemName))
+                    {
+                        var isValidFileName = userInput.IndexOfAny(Path.GetInvalidFileNameChars()) == -1;
+
+                        var fileExists = File.Exists(Path.Combine(oldItemPath, userInput));
+
+                        if (isValidFileName && !fileExists)
+                        {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                },
+                out var newItemName
+            );
+
+            // If the user cancels the dialog, return.
+            if (!result) return;
+
+            var newItemPath = Path.Combine(Path.GetDirectoryName(oldItemPath), newItemName);
+
+            File.Move(oldItemPath, newItemPath);
         }
-
-        public class RenameItemValidatorResult : IRenameItemValidationResult
-        {
-            public RenameItemValidatorResult(string previousValue)
-            {
-                PreviousValue = previousValue;
-            }
-            public bool IsValid => true;
-
-            public string Feedback => "ostehat";
-
-            public string PreviousValue { get; }
-
-            public string ProposedValue { get; }
-        }
-
     }
 }
