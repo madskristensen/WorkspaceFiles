@@ -10,13 +10,16 @@ namespace WorkspaceFiles
     {
         public bool DoDragDrop(IEnumerable<object> items)
         {
-            if (items.Count() > 1)
+            if (!items.OfType<WorkspaceItemNode>().Any())
             {
                 return false;
             }
 
+            var path = (items.FirstOrDefault() as WorkspaceItemNode)?.Info.FullName;
+
             DependencyObject dragSource = (Keyboard.FocusedElement as DependencyObject) ?? Application.Current.MainWindow;
-            DragDrop.DoDragDrop(dragSource, items.Single(), DragDropEffects.Move);
+            var dataObj = new DataObject(DataFormats.FileDrop, items.OfType<WorkspaceItemNode>().Select(i => i.Info.FullName).ToArray());
+            DragDrop.DoDragDrop(dragSource, dataObj, DragDropEffects.Move);
 
             return true;
         }

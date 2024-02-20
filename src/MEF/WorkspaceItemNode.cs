@@ -418,7 +418,7 @@ namespace WorkspaceFiles
 
         public void OnDragEnter(DirectionalDropArea dropArea, DragEventArgs e)
         {
-            if (Info is DirectoryInfo && e.Data.GetDataPresent(typeof(WorkspaceItemNode)))
+            if (Info is DirectoryInfo && e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 e.Effects = DragDropEffects.Move;
             }
@@ -426,7 +426,7 @@ namespace WorkspaceFiles
 
         public void OnDragOver(DirectionalDropArea dropArea, DragEventArgs e)
         {
-            if (Info is DirectoryInfo && e.Data.GetDataPresent(typeof(WorkspaceItemNode)))
+            if (Info is DirectoryInfo && e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 e.Effects = DragDropEffects.Move;
             }
@@ -434,7 +434,7 @@ namespace WorkspaceFiles
 
         public void OnDragLeave(DirectionalDropArea dropArea, DragEventArgs e)
         {
-            if (Info is DirectoryInfo && e.Data.GetDataPresent(typeof(WorkspaceItemNode)))
+            if (Info is DirectoryInfo && e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 e.Effects = DragDropEffects.Move;
             }
@@ -444,24 +444,28 @@ namespace WorkspaceFiles
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            if (e.Data.GetDataPresent(typeof(WorkspaceItemNode)))
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
-                var node = e.Data.GetData(typeof(WorkspaceItemNode)) as WorkspaceItemNode;
+                var paths = e.Data.GetData(DataFormats.FileDrop) as string[];
                 DTE dte = VS.GetRequiredService<DTE, DTE>();
 
-                if (dte.Solution.FindProjectItem(node.Info.FullName) != null)
+                foreach (var path in paths)
                 {
-                    VS.MessageBox.ShowError("You cannot move a file that is part of a project");
-                    return;
-                }
+                    if (dte.Solution.FindProjectItem(path) != null)
+                    {
+                        VS.MessageBox.ShowError("You cannot move a file that is part of a project");
+                        return;
+                    }
 
-                if (node?.Info is FileInfo file)
-                {
-                    file.MoveTo(Path.Combine(Info.FullName, file.Name));
-                }
-                else if (node?.Info is DirectoryInfo dir)
-                {
-                    dir.MoveTo(Path.Combine(Info.FullName, dir.Name));
+                    if (File.Exists(path))
+                    {
+                        File.Move(path, Path.Combine(Info.FullName, Path.GetFileName(path)));
+                    }
+                    else if (Directory.Exists(path))
+                    {
+                        var dir = new DirectoryInfo(path);
+                        dir.MoveTo(Path.Combine(Info.FullName, dir.Name));
+                    }
                 }
 
                 e.Handled = true;
