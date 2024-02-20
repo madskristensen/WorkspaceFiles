@@ -27,7 +27,13 @@ namespace WorkspaceFiles
         public const int FileContextMenuGroup = 0x0020;
         public const int FolderContextMenuGroup = 0x0030;
         public const int FileOpenGroup = 0x0040;
+        public const int FolderOpenGroup = 0x0041;
+        public const int RootOpenGroup = 0x0042;
         public const int SolutionToolbarGroup = 0x0050;
+        public const int FileOperationsGroup = 0x0060;
+        public const int FolderOperationsGroup = 0x0061;
+        public const int RootOperationsGroup = 0x0062;
+        public const int AddItemGroup = 0x0070;
         public const int Delete = 0x0200;
         public const int OpenInExplorer = 0x0300;
         public const int ToggleWorkspace = 0x0400;
@@ -38,5 +44,6 @@ namespace WorkspaceFiles
         public const int RemoveFolder = 0x0900;
         public const int NewFolder = 0x1000;
         public const int NewFile = 0x1001;
+        public const int OpenInVsCode = 0x1002;
     }
 }

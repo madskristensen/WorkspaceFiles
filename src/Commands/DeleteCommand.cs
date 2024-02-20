@@ -30,7 +30,14 @@ namespace WorkspaceFiles
                 }
                 else
                 {
-                    WorkspaceItemContextMenuController.CurrentItem.Info.Delete();
+                    if (Directory.Exists(WorkspaceItemContextMenuController.CurrentItem.Info.FullName))
+                    {
+                        Directory.Delete(WorkspaceItemContextMenuController.CurrentItem.Info.FullName, true);
+                    }
+                    else
+                    {
+                        WorkspaceItemContextMenuController.CurrentItem.Info.Delete();
+                    }
                 }
             }
             catch (Exception ex)

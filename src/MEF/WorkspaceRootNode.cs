@@ -158,8 +158,6 @@ namespace WorkspaceFiles
                 return false;
             }
 
-            solRoot = currentRoot;
-
             while (currentRoot != null)
             {
                 var dotGit = Path.Combine(currentRoot.FullName, ".git");

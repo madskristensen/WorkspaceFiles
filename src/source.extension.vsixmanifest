@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="WorkspaceFiles.e5308ac4-ca47-4992-945b-9b144a10c2d0" Version="1.0.999" Language="en-US" Publisher="Mads Kristensen" />
+        <Identity Id="WorkspaceFiles.e5308ac4-ca47-4992-945b-9b144a10c2d0" Version="1.0.1000" Language="en-US" Publisher="Mads Kristensen" />
         <DisplayName>File Explorer</DisplayName>
         <Description xml:space="preserve">Gives access to all files and folders from the file system under the repo- or solution root folder. All in the same Solution Explorer view.</Description>
         <MoreInfo>https://github.com/madskristensen/WorkspaceFiles</MoreInfo>

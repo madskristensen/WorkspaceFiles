@@ -8,14 +8,15 @@ namespace WorkspaceFiles
     {
         protected override void Execute(object sender, EventArgs e)
         {
-            WorkspaceItemNode item = WorkspaceItemContextMenuController.CurrentItem;
-            if (item.CanRename)
-            {
-                item.BeginRename(item, (e) =>
-                {
-                    return new RenameItemValidatorResult(item.Text);
-                });
-            }
+            VS.MessageBox.Show("Not implemented yet");
+            //WorkspaceItemNode item = WorkspaceItemContextMenuController.CurrentItem;
+            //if (item.CanRename)
+            //{
+            //    item.BeginRename(item, (e) =>
+            //    {
+            //        return new RenameItemValidatorResult(item.Text);
+            //    });
+            //}
         }
 
         public class RenameItemValidatorResult : IRenameItemValidationResult

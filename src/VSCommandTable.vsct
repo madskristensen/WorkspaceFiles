@@ -11,6 +11,7 @@
       <Menu guid="WorkspaceFiles" id="RootContextMenu" type="Context">
         <Strings>
           <ButtonText>Workspace context menu</ButtonText>
+          <MenuText>This is a test</MenuText>
         </Strings>
       </Menu>
       <Menu guid="WorkspaceFiles" id="FileContextMenu" type="Context">
@@ -26,26 +27,44 @@
     </Menus>
 
     <Groups>
-      <Group guid="WorkspaceFiles" id="RootContextMenuGroup" priority="0x0600">
-        <Parent guid="WorkspaceFiles" id="RootContextMenu"/>
-      </Group>
-      <Group guid="WorkspaceFiles" id="FileContextMenuGroup" priority="0x0600">
-        <Parent guid="WorkspaceFiles" id="FileContextMenu"/>
-      </Group>
-      <Group guid="WorkspaceFiles" id="FolderContextMenuGroup" priority="0x0600">
-        <Parent guid="WorkspaceFiles" id="FolderContextMenu"/>
-      </Group>
       <Group guid="WorkspaceFiles" id="SolutionToolbarGroup" priority="0xF000">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_TOOL_PROJWIN"/>
       </Group>
-      <Group guid="WorkspaceFiles" id="FileOpenGroup" priority="0xF000">
+      <Group guid="WorkspaceFiles" id="RootContextMenuGroup" priority="0x0100">
+        <Parent guid="WorkspaceFiles" id="RootContextMenu"/>
+      </Group>
+      <Group guid="WorkspaceFiles" id="FileContextMenuGroup" priority="0x0100">
         <Parent guid="WorkspaceFiles" id="FileContextMenu"/>
+      </Group>
+      <Group guid="WorkspaceFiles" id="FolderContextMenuGroup" priority="0x0100">
+        <Parent guid="WorkspaceFiles" id="FolderContextMenu"/>
+      </Group>
+      <Group guid="WorkspaceFiles" id="FileOpenGroup" priority="0x0300">
+        <Parent guid="WorkspaceFiles" id="FileContextMenu"/>
+      </Group>
+      <Group guid="WorkspaceFiles" id="FolderOpenGroup" priority="0x0300">
+        <Parent guid="WorkspaceFiles" id="FolderContextMenu"/>
+      </Group>
+      <Group guid="WorkspaceFiles" id="RootOpenGroup" priority="0x0300">
+        <Parent guid="WorkspaceFiles" id="RootContextMenu"/>
+      </Group>
+      <Group guid="WorkspaceFiles" id="AddItemGroup" priority="0x0400">
+        <Parent guid="WorkspaceFiles" id="RootContextMenu"/>
+      </Group>
+      <Group guid="WorkspaceFiles" id="FileOperationsGroup" priority="0x0500">
+        <Parent guid="WorkspaceFiles" id="FileContextMenu"/>
+      </Group>
+      <Group guid="WorkspaceFiles" id="FolderOperationsGroup" priority="0x0500">
+        <Parent guid="WorkspaceFiles" id="FolderContextMenu"/>
+      </Group>
+      <Group guid="WorkspaceFiles" id="RootOperationsGroup" priority="0x0500">
+        <Parent guid="WorkspaceFiles" id="RootContextMenu"/>
       </Group>
     </Groups>
 
     <Buttons>
       <Button guid="WorkspaceFiles" id="Delete" priority="0x0300" type="Button">
-        <Parent guid="WorkspaceFiles" id="FileContextMenuGroup" />
+        <Parent guid="WorkspaceFiles" id="FileOperationsGroup" />
         <Icon guid="ImageCatalogGuid" id="Cancel" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
@@ -55,7 +74,7 @@
       </Button>
 
       <Button guid="WorkspaceFiles" id="Rename" priority="0x0200" type="Button">
-        <Parent guid="WorkspaceFiles" id="FileContextMenuGroup" />
+        <Parent guid="WorkspaceFiles" id="FileOperationsGroup" />
         <Icon guid="ImageCatalogGuid" id="Rename" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
@@ -65,12 +84,22 @@
       </Button>
 
       <Button guid="WorkspaceFiles" id="OpenInExplorer" priority="0x0120" type="Button">
-        <Parent guid="WorkspaceFiles" id="RootContextMenuGroup" />
+        <Parent guid="WorkspaceFiles" id="RootOpenGroup" />
         <Icon guid="ImageCatalogGuid" id="Open" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>&amp;Open in File Explorer</ButtonText>
           <LocCanonicalName>.FileExplorer.OpenInExplorer</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="WorkspaceFiles" id="OpenInVsCode" priority="0x0140" type="Button">
+        <Parent guid="WorkspaceFiles" id="RootOpenGroup" />
+        <Icon guid="ImageCatalogGuid" id="VisualStudioOnline" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Open in &amp;VS Code</ButtonText>
+          <LocCanonicalName>.FileExplorer.OpenInVsCode</LocCanonicalName>
         </Strings>
       </Button>
 
@@ -117,7 +146,7 @@
         </Strings>
       </Button>
       <Button guid="WorkspaceFiles" id="RemoveFolder" priority="0x0900" type="Button">
-        <Parent guid="WorkspaceFiles" id="RootContextMenuGroup" />
+        <Parent guid="WorkspaceFiles" id="RootOperationsGroup" />
         <Icon guid="ImageCatalogGuid" id="Cancel" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
@@ -127,7 +156,7 @@
       </Button>
 
       <Button guid="WorkspaceFiles" id="NewFolder" priority="0x1000" type="Button">
-        <Parent guid="WorkspaceFiles" id="RootContextMenuGroup" />
+        <Parent guid="WorkspaceFiles" id="AddItemGroup" />
         <Icon guid="ImageCatalogGuid" id="NewFolder" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
@@ -137,7 +166,7 @@
       </Button>
 
       <Button guid="WorkspaceFiles" id="NewFile" priority="0x1001" type="Button">
-        <Parent guid="WorkspaceFiles" id="RootContextMenuGroup" />
+        <Parent guid="WorkspaceFiles" id="AddItemGroup" />
         <Icon guid="ImageCatalogGuid" id="NewDocument" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
@@ -156,10 +185,16 @@
 
   <CommandPlacements>
     <CommandPlacement guid="WorkspaceFiles" id="OpenInExplorer" priority="100">
-      <Parent guid="WorkspaceFiles" id="FolderContextMenuGroup" />
+      <Parent guid="WorkspaceFiles" id="FolderOpenGroup" />
     </CommandPlacement>
     <CommandPlacement guid="WorkspaceFiles" id="OpenInExplorer" priority="100">
       <Parent guid="WorkspaceFiles" id="FileOpenGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="WorkspaceFiles" id="OpenInVsCode" priority="140">
+      <Parent guid="WorkspaceFiles" id="FileOpenGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="WorkspaceFiles" id="OpenInVsCode" priority="140">
+      <Parent guid="WorkspaceFiles" id="FolderOpenGroup" />
     </CommandPlacement>
     <CommandPlacement guid="WorkspaceFiles" id="CopyFullPath" priority="100">
       <Parent guid="WorkspaceFiles" id="FolderContextMenuGroup" />
@@ -168,13 +203,13 @@
       <Parent guid="WorkspaceFiles" id="RootContextMenuGroup" />
     </CommandPlacement>
     <CommandPlacement guid="WorkspaceFiles" id="Rename" priority="100">
-      <Parent guid="WorkspaceFiles" id="FolderContextMenuGroup" />
+      <Parent guid="WorkspaceFiles" id="FolderOperationsGroup" />
     </CommandPlacement>
-    <CommandPlacement guid="WorkspaceFiles" id="NewFolder" priority="100">
-      <Parent guid="WorkspaceFiles" id="FolderContextMenuGroup" />
+    <CommandPlacement guid="WorkspaceFiles" id="AddItemGroup" priority="0x0400">
+      <Parent guid="WorkspaceFiles" id="FolderContextMenu" />
     </CommandPlacement>
-    <CommandPlacement guid="WorkspaceFiles" id="NewFile" priority="100">
-      <Parent guid="WorkspaceFiles" id="FolderContextMenuGroup" />
+    <CommandPlacement guid="WorkspaceFiles" id="Delete" priority="400">
+      <Parent guid="WorkspaceFiles" id="FolderOperationsGroup" />
     </CommandPlacement>
   </CommandPlacements>
 
@@ -190,7 +225,13 @@
       <IDSymbol name="FileContextMenuGroup" value="0x020" />
       <IDSymbol name="FolderContextMenuGroup" value="0x030" />
       <IDSymbol name="FileOpenGroup" value="0x040" />
+      <IDSymbol name="FolderOpenGroup" value="0x041" />
+      <IDSymbol name="RootOpenGroup" value="0x042" />
       <IDSymbol name="SolutionToolbarGroup" value="0x050"/>
+      <IDSymbol name="FileOperationsGroup" value="0x060"/>
+      <IDSymbol name="FolderOperationsGroup" value="0x061"/>
+      <IDSymbol name="RootOperationsGroup" value="0x062"/>
+      <IDSymbol name="AddItemGroup" value="0x070"/>
 
       <!--Commands-->
       <IDSymbol name="Delete" value="0x0200" />
@@ -203,6 +244,7 @@
       <IDSymbol name="RemoveFolder" value="0x0900" />
       <IDSymbol name="NewFolder" value="0x1000" />
       <IDSymbol name="NewFile" value="0x1001" />
+      <IDSymbol name="OpenInVsCode" value="0x1002" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>
