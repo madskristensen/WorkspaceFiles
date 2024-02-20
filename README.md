@@ -21,7 +21,11 @@ Add any folder you want by right-clicking the solution node and select **Add > E
 
 ![Add Physical Folder](art/add-physical-folder.png)
 
+## .gitignore support
 Files and folders matching a pattern in the `.gitignore` file are automatically grayed out in the Solution Explorer.
+
+## Image hover preview
+**Hovering over image files** shows an preview tooltip of the image.
 
 ## How can I help?
 If you enjoy using the extension, please give it a ★★★★★ rating on the [Visual Studio Marketplace][marketplace].
