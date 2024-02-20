@@ -36,5 +36,7 @@ namespace WorkspaceFiles
         public const int Rename = 0x0700;
         public const int AddFolder = 0x0800;
         public const int RemoveFolder = 0x0900;
+        public const int NewFolder = 0x1000;
+        public const int NewFile = 0x1001;
     }
 }

@@ -217,6 +217,18 @@ namespace WorkspaceFiles
             RaisePropertyChanged(nameof(HasItems));
         }
 
+        /// <summary>
+        /// Sort items in the same way as the file system.
+        /// Directories first, then files, and then sorted by name. 
+        /// </summary>
+        void SortAsFileSystem(BulkObservableCollection<WorkspaceItemNode> collection)
+        {
+            // Workaround since the BulkObservableCollection does not support sorting.
+            WorkspaceItemNode[] tmp = collection.OrderBy(i => i.Text).OrderBy(i => i.Info is FileInfo).ToArray();
+            _innerItems.Clear();
+            _innerItems.AddRange(tmp);
+        }
+
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
             if (e.Name.Contains('~') || e.Name.IndexOf(".tmp", StringComparison.OrdinalIgnoreCase) > -1) // temp files created by VS and deleted immediately after
@@ -224,21 +236,40 @@ namespace WorkspaceFiles
                 return;
             }
 
-            WorkspaceItemNode item = _innerItems.FirstOrDefault(i => e.OldFullPath == i.Info.FullName);
+            WorkspaceItemNode item;
+            // Lock the items collection since it can be modified by another running thread at the same time that we received this event.
+            lock (_innerItems)
+            {
+                item = _innerItems.FirstOrDefault(i => e.OldFullPath == i.Info.FullName);
+            }
 
             if (item != null)
             {
+                // Update the existing item with the new name and path.
                 ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
                 {
                     await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                     item.Info = item.Info is FileInfo ? new FileInfo(e.FullPath) : new DirectoryInfo(e.FullPath);
                     item.Text = e.Name;
 
-                    WorkspaceItemNode[] items = _innerItems.OrderBy(i => i.Text).OrderBy(i => i.Info is FileInfo).ToArray();
-                    _innerItems.BeginBulkOperation();
-                    _innerItems.Clear();
-                    _innerItems.AddRange(items);
-                    _innerItems.EndBulkOperation();
+                    lock (_innerItems)
+                    {
+                        _innerItems.BeginBulkOperation();
+                        SortAsFileSystem(_innerItems);
+                        _innerItems.EndBulkOperation();
+                    }
+                }).FireAndForget();
+            }
+            else
+            {
+                // Handling cases where VS temp files are renamed to the actual file name. Cases like this happens when a file is modified and saved.
+                // In this case the OnDeleted event is fired for the old file and the OnRenamed event is fired for the temp file.
+                // Since the OnDeleted event can be fired first, the item is removed from the collection and the OnRenamed event is ignored.
+                FileSystemInfo info = File.Exists(e.FullPath) ? new FileInfo(e.FullPath) : new DirectoryInfo(e.FullPath);
+
+                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+                {
+                    await CreateItemAsync(info);
                 }).FireAndForget();
             }
         }
@@ -253,7 +284,12 @@ namespace WorkspaceFiles
                 {
                     await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                     item.IsCut = true;
-                    _innerItems.Remove(item);
+                    
+                    lock (_innerItems)
+                    {
+                        _innerItems.Remove(item);
+                    }
+
                     RaisePropertyChanged(nameof(HasItems));
                 }).FireAndForget();
             }
@@ -270,19 +306,32 @@ namespace WorkspaceFiles
 
             ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
             {
-                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                await CreateItemAsync(info);
+            }).FireAndForget();
+        }
+
+        private async Task CreateItemAsync(FileSystemInfo info)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            lock (_innerItems)
+            {
+                // Check if the item already exists in the collection.
+                // Since multiple save file events can be fired in quick succession, the item might already exist when being
+                // moved from a temp file to the actual file.
+                WorkspaceItemNode item = _innerItems.FirstOrDefault(node => node.Info.FullName == info.FullName);
+                if (item != null)
+                {
+                    return;
+                }
 
                 _innerItems.BeginBulkOperation();
                 _innerItems.Add(new WorkspaceItemNode(this, info, _ignoreList));
-
-                WorkspaceItemNode[] items = _innerItems.OrderBy(i => i.Text).OrderBy(i => i.Info is FileInfo).ToArray();
-
-                _innerItems.Clear();
-                _innerItems.AddRange(items);
+                SortAsFileSystem(_innerItems);
                 _innerItems.EndBulkOperation();
+            }
 
-                RaisePropertyChanged(nameof(HasItems));
-            }).FireAndForget();
+            RaisePropertyChanged(nameof(HasItems));
         }
 
         public void Dispose()
