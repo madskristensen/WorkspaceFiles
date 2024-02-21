@@ -38,6 +38,15 @@ namespace WorkspaceFiles
                     {
                         WorkspaceItemContextMenuController.CurrentItem.Info.Delete();
                     }
+
+                    object parent = WorkspaceItemContextMenuController.CurrentItem.SourceItem;
+                    if (parent is WorkspaceItemNode parentNode)
+                    {
+                        // This is a hack to force the parent node to refresh its children since as per the documentation,
+                        // if a FileSystemWatcher is monitoring the directory, the events are not raised in the parent directory.
+                        // https://learn.microsoft.com/en-us/dotnet/api/system.io.filesystemwatcher.deleted?view=net-8.0#remarks
+                        parentNode.ScheduleSyncChildren();
+                    }
                 }
             }
             catch (Exception ex)

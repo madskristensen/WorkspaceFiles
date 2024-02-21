@@ -81,6 +81,7 @@ namespace WorkspaceFiles
                 IsCut = _ignoreList?.IsIgnored(dir) == true;
 
                 _watcher = new FileSystemWatcher(Info.FullName);
+
                 _watcher.Renamed += OnRenamed;
                 _watcher.Deleted += OnDeleted;
                 _watcher.Created += OnCreated;
@@ -180,7 +181,7 @@ namespace WorkspaceFiles
             }
         }
 
-        private void ScheduleSyncChildren()
+        public void ScheduleSyncChildren()
         {
             _refreshChildrenMutex.WaitOne();
             try
@@ -278,19 +279,24 @@ namespace WorkspaceFiles
             _children.EndBulkOperation();
         }
 
-        private void OnRenamed(object sender, RenamedEventArgs e)
+        private void OnFileSystemChanged(string path)
         {
             ScheduleSyncChildren();
+        }
+
+        private void OnRenamed(object sender, RenamedEventArgs e)
+        {
+            OnFileSystemChanged(e.FullPath);
         }
 
         private void OnDeleted(object sender, FileSystemEventArgs e)
         {
-            ScheduleSyncChildren();
+            OnFileSystemChanged(e.FullPath);
         }
 
         private void OnCreated(object sender, FileSystemEventArgs e)
         {
-            ScheduleSyncChildren();
+            OnFileSystemChanged(e.FullPath);
         }
 
         public void Dispose()
