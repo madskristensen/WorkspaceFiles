@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using EnvDTE;
 using MAB.DotIgnore;
@@ -32,12 +33,21 @@ namespace WorkspaceFiles
         IDragDropTargetPattern,
         IRenamePattern
     {
-        private readonly BulkObservableCollection<WorkspaceItemNode> _innerItems = [];
         private string _text;
         private bool _isCut;
         private FileSystemWatcher _watcher;
         private bool _isDisposed;
         private readonly IgnoreList _ignoreList;
+
+        // Mutex to prevent multiple refreshes from happening at the same time
+        Mutex _refreshChildrenMutex = new ();
+        // Flag to prevent multiple refreshes from happening at the same time works in conjunction with _refreshChildrenMutex
+        bool _isRefreshingChildren;
+
+        // The visible children of this node. Any change to the file system will cause this collection to be updated.
+        // This collection is observable so it can only be modified on the Main thread.
+        private readonly BulkObservableCollection<WorkspaceItemNode> _children = [];
+
         private static readonly HashSet<Type> _supportedPatterns =
         [
             typeof(ITreeDisplayItem),
@@ -69,6 +79,13 @@ namespace WorkspaceFiles
             else if (info is DirectoryInfo dir)
             {
                 IsCut = _ignoreList?.IsIgnored(dir) == true;
+
+                _watcher = new FileSystemWatcher(Info.FullName);
+                _watcher.Renamed += OnRenamed;
+                _watcher.Deleted += OnDeleted;
+                _watcher.Created += OnCreated;
+                _watcher.EnableRaisingEvents = true;
+                RefreshChildren();
             }
         }
 
@@ -80,18 +97,7 @@ namespace WorkspaceFiles
 
         public bool HasItems { get; private set; }
 
-        public IEnumerable Items
-        {
-            get
-            {
-                if (_innerItems.Count == 0)
-                {
-                    BuildInnerItems();
-                }
-
-                return _innerItems;
-            }
-        }
+        public IEnumerable Items => _children;
 
         public string Text
         {
@@ -174,189 +180,140 @@ namespace WorkspaceFiles
             }
         }
 
-        private void BuildInnerItems()
+        private void ScheduleSyncChildren()
         {
-            // First, clear out any existing items since this could be a refresh.
-            foreach (WorkspaceItemNode item in _innerItems)
+            _refreshChildrenMutex.WaitOne();
+            try
             {
-                item.Dispose();
-            }
-
-            _innerItems.BeginBulkOperation();
-            _innerItems.Clear();
-
-            // Second, add the new items.
-            if (Info is FileInfo file)
-            {
-                _innerItems.Add(new WorkspaceItemNode(this, file, _ignoreList));
-            }
-            else if (Info is DirectoryInfo dir)
-            {
-                foreach (FileSystemInfo item in dir.EnumerateFileSystemInfos().OrderBy(i => i is FileInfo))
-                {
-                    if (item.Name != ".git") // ignore .git folder for safety reasons
-                    {
-                        _innerItems.Add(new WorkspaceItemNode(this, item, _ignoreList));
-                    }
-                }
-            }
-
-            // Thirdly, hook up the file system watcher if this is a directory.
-            if (Info is DirectoryInfo && _watcher == null)
-            {
-                _watcher = new FileSystemWatcher(Info.FullName);
-                _watcher.Renamed += OnRenamed;
-                _watcher.Deleted += OnDeleted;
-                _watcher.Created += OnCreated;
-                _watcher.EnableRaisingEvents = true;
-            }
-
-            // Lastly, register the updated items.
-            _innerItems.EndBulkOperation();
-            HasItems = _innerItems.Count > 0;
-            RaisePropertyChanged(nameof(HasItems));
-        }
-
-        /// <summary>
-        /// Sort items in the same way as the file system.
-        /// Directories first, then files, and then sorted by name. 
-        /// </summary>
-        void SortAsFileSystem(BulkObservableCollection<WorkspaceItemNode> collection)
-        {
-            // Workaround since the BulkObservableCollection does not support sorting.
-            WorkspaceItemNode[] tmp = collection.OrderBy(i => i.Text).OrderBy(i => i.Info is FileInfo).ToArray();
-            _innerItems.Clear();
-            _innerItems.AddRange(tmp);
-        }
-
-        private void OnRenamed(object sender, RenamedEventArgs e)
-        {
-            if (e.Name.Contains('~') || e.Name.IndexOf(".tmp", StringComparison.OrdinalIgnoreCase) > -1) // temp files created by VS and deleted immediately after
-            {
-                return;
-            }
-
-            WorkspaceItemNode item;
-            // Lock the items collection since it can be modified by another running thread at the same time that we received this event.
-            lock (_innerItems)
-            {
-                item = _innerItems.FirstOrDefault(i => e.OldFullPath == i.Info.FullName);
-            }
-
-            if (item != null)
-            {
-                // Update the existing item with the new name and path.
-                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
-                {
-                    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                    item.Info = item.Info is FileInfo ? new FileInfo(e.FullPath) : new DirectoryInfo(e.FullPath);
-                    item.Text = e.Name;
-
-                    lock (_innerItems)
-                    {
-                        _innerItems.BeginBulkOperation();
-                        SortAsFileSystem(_innerItems);
-                        _innerItems.EndBulkOperation();
-                    }
-                }).FireAndForget();
-            }
-            else
-            {
-                // Handling cases where VS temp files are renamed to the actual file name. Cases like this happens when a file is modified and saved.
-                // In this case the OnDeleted event is fired for the old file and the OnRenamed event is fired for the temp file.
-                // Since the OnDeleted event can be fired first, the item is removed from the collection and the OnRenamed event is ignored.
-                FileSystemInfo info = File.Exists(e.FullPath) ? new FileInfo(e.FullPath) : new DirectoryInfo(e.FullPath);
-
-                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
-                {
-                    await CreateItemAsync(info);
-                }).FireAndForget();
-            }
-        }
-
-        private void OnDeleted(object sender, FileSystemEventArgs e)
-        {
-            WorkspaceItemNode item = _innerItems.FirstOrDefault(i => e.FullPath == i.Info.FullName);
-
-            if (_innerItems.Contains(item))
-            {
-                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
-                {
-                    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                    item.IsCut = true;
-                    
-                    lock (_innerItems)
-                    {
-                        _innerItems.Remove(item);
-                    }
-
-                    RaisePropertyChanged(nameof(HasItems));
-                }).FireAndForget();
-            }
-        }
-
-        private void OnCreated(object sender, FileSystemEventArgs e)
-        {
-            if (e.Name.Contains('~') || e.Name.IndexOf(".tmp", StringComparison.OrdinalIgnoreCase) > -1) // temp files created by VS and deleted immediately after
-            {
-                return;
-            }
-
-            FileSystemInfo info = File.Exists(e.FullPath) ? new FileInfo(e.FullPath) : new DirectoryInfo(e.FullPath);
-
-            ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
-            {
-                await CreateItemAsync(info);
-            }).FireAndForget();
-        }
-
-        private async Task CreateItemAsync(FileSystemInfo info)
-        {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
-            lock (_innerItems)
-            {
-                // Check if the item already exists in the collection.
-                // Since multiple save file events can be fired in quick succession, the item might already exist when being
-                // moved from a temp file to the actual file.
-                WorkspaceItemNode item = _innerItems.FirstOrDefault(node => node.Info.FullName == info.FullName);
-                if (item != null)
+                // If we're already refreshing the children, we don't need to do anything.
+                if (_isRefreshingChildren)
                 {
                     return;
                 }
 
-                _innerItems.BeginBulkOperation();
-                _innerItems.Add(new WorkspaceItemNode(this, info, _ignoreList));
-                SortAsFileSystem(_innerItems);
-                _innerItems.EndBulkOperation();
+                _isRefreshingChildren = true;
+
+                ThreadHelper.JoinableTaskFactory.RunAsync(SyncChildrenAsync).FireAndForget();
+            }
+            finally
+            {
+                _refreshChildrenMutex.ReleaseMutex();
+            }
+        }
+
+        private async Task SyncChildrenAsync()
+        {
+            // Wait for a short delay to allow for multiple changes to be made before refreshing the children
+            await Task.Delay(150);
+
+            // Switch to the main thread to refresh the children
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            _refreshChildrenMutex.WaitOne();
+            try
+            {
+                RefreshChildren();
+                _isRefreshingChildren = false;
+            }
+            finally
+            {
+                _refreshChildrenMutex.ReleaseMutex();
+            }
+        }
+
+        private bool ShouldShowEntry(string path)
+        {
+            return Path.GetFileName(path) != ".git" && !path.Contains("~") && Path.GetExtension(path).ToLower() != ".tmp";
+        }
+
+        private void RefreshChildren()
+        {
+            Dictionary<string, WorkspaceItemNode> existingNodes = _children.ToDictionary(n => n.Info.FullName, n => n);
+            HashSet<string> nodesToDispose = existingNodes.Keys.ToHashSet();
+            List<WorkspaceItemNode> activeNodes = new();
+            string[] entries = Directory.GetFileSystemEntries(Info.FullName);
+            foreach (string entry in entries)
+            {
+                if (!ShouldShowEntry(entry))
+                {
+                    continue;
+                }
+
+                if (existingNodes.ContainsKey(entry))
+                {
+                    nodesToDispose.Remove(entry);
+                    activeNodes.Add(existingNodes[entry]);
+                }
+                else
+                {
+                    FileSystemInfo info = File.Exists(entry) ? new FileInfo(entry) : new DirectoryInfo(entry);
+                    activeNodes.Add(new WorkspaceItemNode(this, info, _ignoreList));
+                }
             }
 
-            RaisePropertyChanged(nameof(HasItems));
+            // If there are no nodes to dispose and all active nodes are already in the children collection, we don't need to do anything
+            if (nodesToDispose.Count == 0 && activeNodes.Count == _children.Count)
+            {
+                return;
+            }
+
+            foreach (string node in nodesToDispose)
+            {
+                existingNodes[node].Dispose();
+            }
+
+            // Sort the nodes so that directories are listed first, then files, and then alphabetically
+            activeNodes.Sort((lhs, rhs) =>
+            {
+                if (lhs.Info.GetType() == rhs.Info.GetType())
+                {
+                    return StringComparer.OrdinalIgnoreCase.Compare(lhs.Text, rhs.Text);
+                }
+                return lhs.Info is DirectoryInfo ? -1 : 1;
+            });
+
+            _children.BeginBulkOperation();
+            _children.Clear();
+            _children.AddRange(activeNodes);
+            _children.EndBulkOperation();
+        }
+
+        private void OnRenamed(object sender, RenamedEventArgs e)
+        {
+            ScheduleSyncChildren();
+        }
+
+        private void OnDeleted(object sender, FileSystemEventArgs e)
+        {
+            ScheduleSyncChildren();
+        }
+
+        private void OnCreated(object sender, FileSystemEventArgs e)
+        {
+            ScheduleSyncChildren();
         }
 
         public void Dispose()
         {
-            if (!IsDisposed)
+            if (IsDisposed)
             {
-                if (_watcher != null)
-                {
-                    _watcher.Created -= OnCreated;
-                    _watcher.Deleted -= OnDeleted;
-                    _watcher.Renamed -= OnRenamed;
-                    _watcher.Dispose();
-                    _watcher = null;
-                }
-
-                if (_innerItems != null)
-                {
-                    foreach (WorkspaceItemNode item in _innerItems)
-                    {
-                        item.Dispose();
-                    }
-                }
+                return;
             }
 
             IsDisposed = true;
+
+            if (_watcher != null)
+            {
+                _watcher.Created -= OnCreated;
+                _watcher.Deleted -= OnDeleted;
+                _watcher.Renamed -= OnRenamed;
+                _watcher.Dispose();
+            }
+
+            foreach (WorkspaceItemNode item in _children)
+            {
+                item.Dispose();
+            }
         }
 
         public int CompareTo(object obj)
@@ -400,11 +357,8 @@ namespace WorkspaceFiles
 
         public Task RefreshAsync()
         {
-            return Task.Run(async () =>
-            {
-                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                BuildInnerItems();
-            });
+            ScheduleSyncChildren();
+            return Task.CompletedTask;
         }
 
         public void CancelLoad()
