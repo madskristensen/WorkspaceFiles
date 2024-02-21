@@ -56,6 +56,12 @@ namespace WorkspaceFiles
                 {
                     if (IsSolutionNode(item))
                     {
+                        // The solution node is the root of our hierarchy so, we don't need to create a new node
+                        if (_rootNode != null)
+                        {
+                            return _rootNode;
+                        }
+
                         _rootNode = new WorkspaceRootNode();
                         return _rootNode;
                     }
