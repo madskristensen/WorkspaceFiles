@@ -85,6 +85,12 @@ namespace WorkspaceFiles
 
             foreach (DirectoryInfo dir in _directories)
             {
+                // Skip duplicates
+                if (_innerItems.FirstOrDefault((node) => node.Info.FullName == dir.FullName) != null)
+                {
+                    continue;
+                }
+
                 IgnoreList ignoreList = GetIgnore(dir.FullName);
                 _innerItems.Add(new WorkspaceItemNode(this, dir, ignoreList));
             }
