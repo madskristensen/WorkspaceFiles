@@ -17,6 +17,12 @@ namespace WorkspaceFiles
         public WorkspaceItemSourceProvider()
         {
             Microsoft.VisualStudio.Shell.Events.SolutionEvents.OnBeforeCloseSolution += SolutionEvents_OnAfterCloseSolution;
+            Microsoft.VisualStudio.Shell.Events.SolutionEvents.OnAfterOpenSolution += SolutionEvents_OnAfterOpenSolution;
+        }
+
+        private void SolutionEvents_OnAfterOpenSolution(object sender, Microsoft.VisualStudio.Shell.Events.OpenSolutionEventArgs e)
+        {
+            _rootNode = new WorkspaceRootNode();
         }
 
         private void SolutionEvents_OnAfterCloseSolution(object sender, EventArgs e)
