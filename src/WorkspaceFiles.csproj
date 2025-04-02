@@ -61,6 +61,7 @@
     <Compile Include="MEF\WorkspaceItemNodeDragDropSourceController.cs" />
     <Compile Include="MEF\WorkspaceItemNodeTooltip.cs" />
     <Compile Include="MEF\WorkspaceItemType.cs" />
+    <Compile Include="MEF\WorkspaceLoaadingItem.cs" />
     <Compile Include="MEF\WorkspaceRootNode.cs" />
     <Compile Include="Options\General.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
