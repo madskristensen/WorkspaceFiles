@@ -121,6 +121,9 @@
     <PackageReference Include="MAB.DotIgnore">
       <Version>3.0.2</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing">
+      <Version>9.0.4</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.8.2365">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
