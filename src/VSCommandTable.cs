@@ -45,5 +45,6 @@ namespace WorkspaceFiles
         public const int NewFolder = 0x1000;
         public const int NewFile = 0x1001;
         public const int OpenInVsCode = 0x1002;
+        public const int OpenInTerminal = 0x1003;
     }
 }

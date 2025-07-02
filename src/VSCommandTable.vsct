@@ -93,6 +93,16 @@
         </Strings>
       </Button>
 
+      <Button guid="WorkspaceFiles" id="OpenInTerminal" priority="0x0125" type="Button">
+        <Parent guid="WorkspaceFiles" id="RootOpenGroup" />
+        <Icon guid="ImageCatalogGuid" id="Open" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>&amp;Open in Terminal</ButtonText>
+          <LocCanonicalName>.FileExplorer.OpenInTerminal</LocCanonicalName>
+        </Strings>
+      </Button>
+
       <Button guid="WorkspaceFiles" id="OpenInVsCode" priority="0x0140" type="Button">
         <Parent guid="WorkspaceFiles" id="RootOpenGroup" />
         <Icon guid="ImageCatalogGuid" id="VisualStudioOnline" />
@@ -187,6 +197,9 @@
     <CommandPlacement guid="WorkspaceFiles" id="OpenInExplorer" priority="100">
       <Parent guid="WorkspaceFiles" id="FolderOpenGroup" />
     </CommandPlacement>
+    <CommandPlacement guid="WorkspaceFiles" id="OpenInTerminal" priority="100">
+      <Parent guid="WorkspaceFiles" id="FolderOpenGroup" />
+    </CommandPlacement>
     <CommandPlacement guid="WorkspaceFiles" id="OpenInExplorer" priority="100">
       <Parent guid="WorkspaceFiles" id="FileOpenGroup" />
     </CommandPlacement>
@@ -245,6 +258,7 @@
       <IDSymbol name="NewFolder" value="0x1000" />
       <IDSymbol name="NewFile" value="0x1001" />
       <IDSymbol name="OpenInVsCode" value="0x1002" />
+      <IDSymbol name="OpenInTerminal" value="0x1003" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>
