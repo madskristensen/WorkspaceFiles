@@ -16,7 +16,7 @@ namespace WorkspaceFiles
             var start = new ProcessStartInfo()
             {
                 FileName = $"cmd.exe",
-                Arguments = $"/C code {args}",
+                Arguments = $"/C code \"{args}\"",
                 CreateNoWindow = true,
                 UseShellExecute = false,
                 WindowStyle = ProcessWindowStyle.Hidden,
