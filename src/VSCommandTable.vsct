@@ -95,7 +95,7 @@
 
       <Button guid="WorkspaceFiles" id="OpenInTerminal" priority="0x0125" type="Button">
         <Parent guid="WorkspaceFiles" id="RootOpenGroup" />
-        <Icon guid="ImageCatalogGuid" id="Open" />
+        <Icon guid="ImageCatalogGuid" id="Console" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>&amp;Open in Terminal</ButtonText>
