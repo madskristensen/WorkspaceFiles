@@ -10,7 +10,7 @@ namespace WorkspaceFiles.MEF
     internal class WorkspaceItemNodeTooltip
     {
         private static readonly string[] _imageExt = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".gif", ".tif", ".tiff", ".ico", ".bmp", ".wmp"];
-        
+
         public static object GetTooltip(WorkspaceItemNode node)
         {
             if (node.IsCut)
@@ -31,7 +31,7 @@ namespace WorkspaceFiles.MEF
 
                 // Load image asynchronously to avoid blocking UI thread
                 _ = LoadImageAsync(info.FullName, imageControl);
-                
+
                 return imageControl;
             }
             return null;
@@ -43,7 +43,7 @@ namespace WorkspaceFiles.MEF
             {
                 // Switch to background thread for I/O operation
                 await TaskScheduler.Default;
-                
+
                 // Load image on background thread
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
