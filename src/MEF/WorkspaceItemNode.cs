@@ -65,7 +65,15 @@ namespace WorkspaceFiles
 
             if (info is DirectoryInfo dir)
             {
-                HasItems = dir.EnumerateFileSystemInfos().Any();
+                try
+                {
+                    HasItems = dir.EnumerateFileSystemInfos().Any();
+                }
+                catch (Exception)
+                {
+                    // Directory might not be accessible, default to showing expander
+                    HasItems = true;
+                }
 
                 _watcher = new FileSystemWatcher(info.FullName)
                 {
@@ -77,7 +85,23 @@ namespace WorkspaceFiles
                 _watcher.Renamed += OnFileSystemChanged;
                 _watcher.Deleted += OnFileSystemChanged;
                 _watcher.Created += OnFileSystemChanged;
+                _watcher.Error += OnWatcherError;
                 _watcher.EnableRaisingEvents = true;
+            }
+        }
+
+        private void OnWatcherError(object sender, ErrorEventArgs e)
+        {
+            // FileSystemWatcher can stop raising events after an error
+            // Attempt to restart it
+            try
+            {
+                _watcher.EnableRaisingEvents = false;
+                _watcher.EnableRaisingEvents = true;
+            }
+            catch (Exception)
+            {
+                // Watcher may be in an unrecoverable state, log and continue
             }
         }
 
@@ -175,6 +199,11 @@ namespace WorkspaceFiles
         {
             _children ??= [];
 
+            // Refresh the cached state of the FileSystemInfo before checking Exists
+            // This is important because FileSystemInfo caches its state and rapid file changes
+            // (like during Copilot edits) can cause stale cached values
+            Info.Refresh();
+
             if (!Info.Exists)
             {
                 return;
@@ -224,7 +253,12 @@ namespace WorkspaceFiles
             }
             catch (DirectoryNotFoundException)
             {
-                // Directory was deleted between checks
+                // Directory was deleted between checks - don't clear children as this may be temporary
+                return;
+            }
+            catch (IOException)
+            {
+                // IO error (e.g., directory being modified) - don't clear children as this may be temporary
                 return;
             }
 
@@ -372,6 +406,7 @@ namespace WorkspaceFiles
                 _watcher.Created -= OnFileSystemChanged;
                 _watcher.Deleted -= OnFileSystemChanged;
                 _watcher.Renamed -= OnFileSystemChanged;
+                _watcher.Error -= OnWatcherError;
                 _watcher.Dispose();
             }
 
