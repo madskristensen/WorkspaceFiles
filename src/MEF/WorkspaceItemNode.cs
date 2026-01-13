@@ -366,13 +366,13 @@ namespace WorkspaceFiles
         // Checks if a path contains a specific directory segment (bounded by path separators)
         private static bool ContainsPathSegment(ReadOnlySpan<char> path, ReadOnlySpan<char> segment)
         {
-            int index = path.IndexOf(segment, StringComparison.OrdinalIgnoreCase);
+            var index = path.IndexOf(segment, StringComparison.OrdinalIgnoreCase);
             while (index >= 0)
             {
                 // Check if it's a proper path segment (preceded by separator or start, followed by separator or end)
-                bool startOk = index == 0 || path[index - 1] == '\\' || path[index - 1] == '/';
-                int endIndex = index + segment.Length;
-                bool endOk = endIndex == path.Length || path[endIndex] == '\\' || path[endIndex] == '/';
+                var startOk = index == 0 || path[index - 1] == '\\' || path[index - 1] == '/';
+                var endIndex = index + segment.Length;
+                var endOk = endIndex == path.Length || path[endIndex] == '\\' || path[endIndex] == '/';
 
                 if (startOk && endOk)
                 {
@@ -385,7 +385,7 @@ namespace WorkspaceFiles
                     break;
                 }
 
-                int nextIndex = path.Slice(endIndex).IndexOf(segment, StringComparison.OrdinalIgnoreCase);
+                var nextIndex = path.Slice(endIndex).IndexOf(segment, StringComparison.OrdinalIgnoreCase);
                 index = nextIndex >= 0 ? endIndex + nextIndex : -1;
             }
 
