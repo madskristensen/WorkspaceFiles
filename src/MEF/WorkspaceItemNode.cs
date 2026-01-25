@@ -15,6 +15,7 @@ using Microsoft.VisualStudio.Imaging.Interop;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Threading;
 using WorkspaceFiles.MEF;
+using WorkspaceFiles.Services;
 using FontStyle = System.Windows.FontStyle;
 
 namespace WorkspaceFiles
@@ -39,10 +40,13 @@ namespace WorkspaceFiles
         private readonly IgnoreList _ignoreList;
         private readonly Microsoft.Extensions.FileSystemGlobbing.Matcher _globbingMatcher;
         private BulkObservableCollection<WorkspaceItemNode> _children;
+        private GitFileStatus _cachedGitStatus = GitFileStatus.NotInRepo;
+        private bool _gitStatusLoaded;
 
         private static readonly HashSet<Type> _supportedPatterns =
         [
             typeof(ITreeDisplayItem),
+            typeof(ITreeDisplayItemWithImages),
             typeof(IBrowsablePattern),
             typeof(IContextMenuPattern),
             typeof(IInvocationPattern),
@@ -75,14 +79,21 @@ namespace WorkspaceFiles
                 {
                     // Performance optimizations for file system watcher
                     IncludeSubdirectories = false, // Only watch immediate children
-                    NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.CreationTime,
+                    NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.CreationTime | NotifyFilters.LastWrite,
                     InternalBufferSize = 32768 // Increase buffer size to handle rapid changes
                 };
                 _watcher.Renamed += OnFileSystemChanged;
                 _watcher.Deleted += OnFileSystemChanged;
                 _watcher.Created += OnFileSystemChanged;
+                _watcher.Changed += OnFileSystemChanged;
                 _watcher.Error += OnWatcherError;
                 _watcher.EnableRaisingEvents = true;
+            }
+
+            // Load Git status asynchronously for files (folders inherit status from children)
+            if (Type == WorkspaceItemType.File)
+            {
+                LoadGitStatusAsync().FireAndForget();
             }
         }
 
@@ -106,7 +117,6 @@ namespace WorkspaceFiles
         public object SourceItem { get; }
         public string Text => Info?.Name;
         public string ToolTipText => "";
-        public string StateToolTipText => "";
         public object ToolTipContent => WorkspaceItemNodeTooltip.GetTooltip(this);
         public FontWeight FontWeight => FontWeights.Normal;
         public FontStyle FontStyle => FontStyles.Normal;
@@ -114,7 +124,22 @@ namespace WorkspaceFiles
         public int Priority => 0;
         public bool CanPreview => Info is FileInfo;
         public ImageMoniker OverlayIconMoniker => default;
-        public ImageMoniker StateIconMoniker => default;
+        public ImageMoniker StateIconMoniker
+        {
+            get
+            {
+                if (Type != WorkspaceItemType.File)
+                {
+                    return default;
+                }
+
+                // Return the git status icon for files
+                ImageMoniker icon = GitStatusService.GetStatusIcon(_cachedGitStatus);
+
+                return icon;
+            }
+        }
+        public string StateToolTipText => Type == WorkspaceItemType.File ? GitStatusService.GetStatusTooltip(_cachedGitStatus) : string.Empty;
         public bool HasItems { get; private set; }
 
         public IEnumerable Items
@@ -182,6 +207,51 @@ namespace WorkspaceFiles
                 {
                     IsCut = _ignoreList.IsIgnored(file) == true;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Loads Git status asynchronously and updates the state icon.
+        /// </summary>
+        private async Task LoadGitStatusAsync()
+        {
+            if (IsDisposed || Type != WorkspaceItemType.File)
+            {
+                return;
+            }
+
+            GitFileStatus status = await GitStatusService.GetFileStatusAsync(Info.FullName);
+
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            var statusChanged = _cachedGitStatus != status || !_gitStatusLoaded;
+            _cachedGitStatus = status;
+            _gitStatusLoaded = true;
+
+            if (statusChanged)
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                if (!IsDisposed)
+                {
+                    RaisePropertyChanged(nameof(StateIconMoniker));
+                    RaisePropertyChanged(nameof(StateToolTipText));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Refreshes the Git status icon asynchronously.
+        /// Call this after file operations that may have changed git status.
+        /// </summary>
+        public void RefreshGitStatus()
+        {
+            if (Type == WorkspaceItemType.File)
+            {
+                LoadGitStatusAsync().FireAndForget();
             }
         }
 
@@ -346,7 +416,33 @@ namespace WorkspaceFiles
                 return;
             }
 
+            // Refresh git status for children when files change
+            // Use debouncing to avoid excessive refreshes during rapid file changes
+            Debouncer.Debounce("git-status-" + Info.FullName, () => RefreshChildrenGitStatus(), 500);
+
             RefreshAsync().FireAndForget();
+        }
+
+        /// <summary>
+        /// Refreshes git status for all child file nodes.
+        /// </summary>
+        private void RefreshChildrenGitStatus()
+        {
+            if (_children == null || IsDisposed)
+            {
+                return;
+            }
+
+            // Mark cache as stale to force a fresh git status fetch
+            GitStatusService.MarkCacheStale();
+
+            foreach (WorkspaceItemNode child in _children.ToArray())
+            {
+                if (child.Type == WorkspaceItemType.File && !child.IsDisposed)
+                {
+                    child.RefreshGitStatus();
+                }
+            }
         }
 
         // PERFORMANCE OPTIMIZATION: Use spans for faster path checking without string allocations
@@ -405,6 +501,7 @@ namespace WorkspaceFiles
                 _watcher.Created -= OnFileSystemChanged;
                 _watcher.Deleted -= OnFileSystemChanged;
                 _watcher.Renamed -= OnFileSystemChanged;
+                _watcher.Changed -= OnFileSystemChanged;
                 _watcher.Error -= OnWatcherError;
                 _watcher.Dispose();
             }
