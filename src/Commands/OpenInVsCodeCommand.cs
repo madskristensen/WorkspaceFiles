@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 
 namespace WorkspaceFiles
@@ -6,6 +6,11 @@ namespace WorkspaceFiles
     [Command(PackageIds.OpenInVsCode)]
     internal sealed class OpenInVsCodeCommand : BaseCommand<OpenInVsCodeCommand>
     {
+        protected override void BeforeQueryStatus(EventArgs e)
+        {
+            Command.Enabled = WorkspaceItemContextMenuController.CurrentItems.Count == 1;
+        }
+
         protected override void Execute(object sender, EventArgs e)
         {
             var path = WorkspaceItemContextMenuController.CurrentItem.Info.FullName;

@@ -1,10 +1,15 @@
-﻿using System.IO;
+using System.IO;
 
 namespace WorkspaceFiles
 {
     [Command(PackageIds.RemoveFolder)]
     internal sealed class RemoveFolderCommand : BaseCommand<RemoveFolderCommand>
     {
+        protected override void BeforeQueryStatus(EventArgs e)
+        {
+            Command.Enabled = WorkspaceItemContextMenuController.CurrentItems.Count == 1;
+        }
+
         protected override void Execute(object sender, EventArgs e)
         {
             FileSystemInfo item = WorkspaceItemContextMenuController.CurrentItem?.Info;

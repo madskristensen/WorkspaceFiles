@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using Microsoft.Internal.VisualStudio.PlatformUI;
@@ -9,15 +9,25 @@ namespace WorkspaceFiles
 {
     internal class WorkspaceItemContextMenuController : IContextMenuController
     {
-        public static WorkspaceItemNode CurrentItem { get; private set; }
+        private static IReadOnlyList<WorkspaceItemNode> _currentItems = [];
+
+        /// <summary>
+        /// Gets the first selected item. Use <see cref="CurrentItems"/> for multi-select scenarios.
+        /// </summary>
+        public static WorkspaceItemNode CurrentItem => _currentItems.Count > 0 ? _currentItems[0] : null;
+
+        /// <summary>
+        /// Gets all selected items for multi-select context menu operations.
+        /// </summary>
+        public static IReadOnlyList<WorkspaceItemNode> CurrentItems => _currentItems;
 
         public bool ShowContextMenu(IEnumerable<object> items, Point location)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            CurrentItem = items.OfType<WorkspaceItemNode>().FirstOrDefault();
+            _currentItems = items.OfType<WorkspaceItemNode>().ToList();
 
-            if (CurrentItem == null)
+            if (_currentItems.Count == 0)
             {
                 return false;
             }

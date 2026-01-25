@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using EnvDTE;
 using Microsoft.VisualStudio.PlatformUI;
 
@@ -7,6 +7,11 @@ namespace WorkspaceFiles
     [Command(PackageIds.Rename)]
     internal sealed class RenameCommand : BaseCommand<RenameCommand>
     {
+        protected override void BeforeQueryStatus(EventArgs e)
+        {
+            Command.Enabled = WorkspaceItemContextMenuController.CurrentItems.Count == 1;
+        }
+
         protected override void Execute(object sender, EventArgs e)
         {
             var oldItemPath = WorkspaceItemContextMenuController.CurrentItem.Info.FullName;

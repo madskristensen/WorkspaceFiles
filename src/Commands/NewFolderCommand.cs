@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using Microsoft.VisualStudio.PlatformUI;
 
 namespace WorkspaceFiles
@@ -6,6 +6,11 @@ namespace WorkspaceFiles
     [Command(PackageIds.NewFolder)]
     internal sealed class NewFolderCommand : BaseCommand<NewFolderCommand>
     {
+        protected override void BeforeQueryStatus(EventArgs e)
+        {
+            Command.Enabled = WorkspaceItemContextMenuController.CurrentItems.Count == 1;
+        }
+
         protected override void Execute(object sender, EventArgs e)
         {
             var itemPath = WorkspaceItemContextMenuController.CurrentItem.Info.FullName;

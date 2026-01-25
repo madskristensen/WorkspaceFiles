@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 
 namespace WorkspaceFiles
@@ -6,6 +6,11 @@ namespace WorkspaceFiles
     [Command(PackageIds.OpenInTerminal)]
     internal sealed class OpenInTerminalCommand : BaseCommand<OpenInTerminalCommand>
     {
+        protected override void BeforeQueryStatus(EventArgs e)
+        {
+            Command.Enabled = WorkspaceItemContextMenuController.CurrentItems.Count == 1;
+        }
+
         protected override void Execute(object sender, EventArgs e)
         {
             WorkspaceItemNode item = WorkspaceItemContextMenuController.CurrentItem;

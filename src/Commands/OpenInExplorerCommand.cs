@@ -1,10 +1,15 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 namespace WorkspaceFiles
 {
     [Command(PackageIds.OpenInExplorer)]
     internal sealed class OpenInExplorerCommand : BaseCommand<OpenInExplorerCommand>
     {
+        protected override void BeforeQueryStatus(EventArgs e)
+        {
+            Command.Enabled = WorkspaceItemContextMenuController.CurrentItems.Count == 1;
+        }
+
         protected override void Execute(object sender, EventArgs e)
         {
             WorkspaceItemNode item = WorkspaceItemContextMenuController.CurrentItem;
