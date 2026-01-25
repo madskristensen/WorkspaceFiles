@@ -460,7 +460,12 @@ namespace WorkspaceFiles
 
         public async Task RefreshAsync()
         {
-            if (Info is not FileInfo && Info.Exists)
+            // Only refresh directories that have already been expanded (i.e., _children is not null).
+            // For unexpanded nodes, the initial HasItems value from the constructor is sufficient.
+            // Refreshing unexpanded nodes would trigger RefreshChildren() which applies filtering
+            // that may differ from the constructor's unfiltered HasItems check, causing expanders
+            // to incorrectly disappear.
+            if (Info is not FileInfo && Info.Exists && _children != null)
             {
                 await TaskScheduler.Default;
                 Debouncer.Debounce(Info.FullName, RefreshChildren, 250);
