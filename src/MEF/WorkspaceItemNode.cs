@@ -397,12 +397,7 @@ namespace WorkspaceFiles
                 return true;
             }
 
-            // Common build output directories
-            return span switch
-            {
-                "bin" or "obj" or "node_modules" or "packages" => true,
-                _ => false
-            };
+            return false;
         }
 
         private void OnFileSystemChanged(object sender, FileSystemEventArgs e)
@@ -455,6 +450,9 @@ namespace WorkspaceFiles
                    ContainsPathSegment(path, "node_modules") ||
                    ContainsPathSegment(path, ".git") ||
                    ContainsPathSegment(path, ".tmp") ||
+                   ContainsPathSegment(path, "bin") ||
+                   ContainsPathSegment(path, "obj") ||
+                   ContainsPathSegment(path, "packages") ||
                    path.Contains("~", StringComparison.OrdinalIgnoreCase);
         }
 
