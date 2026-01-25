@@ -217,7 +217,12 @@ namespace WorkspaceFiles
                 return false;
             }
 
-            while (currentRoot != null)
+            // Limit traversal depth to avoid excessive I/O on systems without git repos
+            // Most git repos are within 10 levels of the solution directory
+            const int maxDepth = 10;
+            var depth = 0;
+
+            while (currentRoot != null && depth < maxDepth)
             {
                 var dotGit = Path.Combine(currentRoot.FullName, ".git");
 
@@ -230,6 +235,7 @@ namespace WorkspaceFiles
                 }
 
                 currentRoot = currentRoot.Parent;
+                depth++;
             }
 
             // Cache negative result as well
@@ -247,7 +253,11 @@ namespace WorkspaceFiles
 
             var info = new DirectoryInfo(root);
 
-            do
+            // Limit traversal depth to avoid excessive I/O
+            const int maxDepth = 10;
+            var depth = 0;
+
+            while (info != null && depth < maxDepth)
             {
                 var ignoreFile = Path.Combine(info.FullName, ".gitignore");
 
@@ -275,8 +285,8 @@ namespace WorkspaceFiles
                 }
 
                 info = info.Parent;
-
-            } while (info != null);
+                depth++;
+            }
 
             // Cache negative result
             _noGitIgnoreCache[root] = true;

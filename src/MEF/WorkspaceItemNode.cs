@@ -65,15 +65,11 @@ namespace WorkspaceFiles
 
             if (info is DirectoryInfo dir)
             {
-                try
-                {
-                    HasItems = dir.EnumerateFileSystemInfos().Any();
-                }
-                catch (Exception)
-                {
-                    // Directory might not be accessible, default to showing expander
-                    HasItems = true;
-                }
+                // Optimistically assume directories have items to avoid blocking I/O in constructor.
+                // The actual HasItems value will be determined when the node is expanded and
+                // RefreshChildren() populates _children. This prevents UI hangs on network drives
+                // or slow storage when creating many nodes during tree expansion.
+                HasItems = true;
 
                 _watcher = new FileSystemWatcher(info.FullName)
                 {
@@ -277,19 +273,22 @@ namespace WorkspaceFiles
             activeNodes.Sort(_compareNodes);
 
             // UI thread is required for collection updates to properly refresh the tree view
-            ThreadHelper.JoinableTaskFactory.Run(async () =>
-            {
-                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            // Use fire-and-forget async to avoid blocking the background thread
+            UpdateChildrenOnUIThreadAsync(activeNodes).FireAndForget();
+        }
 
-                _children.BeginBulkOperation();
-                _children.Clear();
-                _children.AddRange(activeNodes);
-                _children.EndBulkOperation();
-                HasItems = _children.Count > 0;
+        private async Task UpdateChildrenOnUIThreadAsync(List<WorkspaceItemNode> activeNodes)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-                RaisePropertyChanged(nameof(HasItems));
-                RaisePropertyChanged(nameof(Items));
-            });
+            _children.BeginBulkOperation();
+            _children.Clear();
+            _children.AddRange(activeNodes);
+            _children.EndBulkOperation();
+            HasItems = _children.Count > 0;
+
+            RaisePropertyChanged(nameof(HasItems));
+            RaisePropertyChanged(nameof(Items));
         }
 
         // PERFORMANCE OPTIMIZATION: Pre-compiled delegate for faster sorting
