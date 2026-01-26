@@ -25,7 +25,7 @@ namespace WorkspaceFiles
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            _currentItems = items.OfType<WorkspaceItemNode>().ToList();
+            _currentItems = [.. items.OfType<WorkspaceItemNode>()];
 
             if (_currentItems.Count == 0)
             {

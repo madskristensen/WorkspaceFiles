@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using EnvDTE;
 
 namespace WorkspaceFiles
@@ -42,15 +41,15 @@ namespace WorkspaceFiles
                 // Handle project items with confirmation
                 if (projectItems.Count > 0)
                 {
-                    string message = projectItems.Count == 1
+                    var message = projectItems.Count == 1
                         ? "This file is part of a project. Do you wish to delete it?"
                         : $"{projectItems.Count} files are part of a project. Do you wish to delete them?";
 
-                    bool proceed = await VS.MessageBox.ShowConfirmAsync(message);
+                    var proceed = await VS.MessageBox.ShowConfirmAsync(message);
 
                     if (proceed)
                     {
-                        foreach (var (node, projectItem) in projectItems)
+                        foreach ((WorkspaceItemNode node, ProjectItem projectItem) in projectItems)
                         {
                             projectItem.Delete();
 
@@ -77,7 +76,7 @@ namespace WorkspaceFiles
                         node.Info.Delete();
                     }
 
-                    if (node.SourceItem is WorkspaceItemNode parentNode)
+                    if (node.ParentItem is WorkspaceItemNode parentNode)
                     {
                         parentsToRefresh.Add(parentNode);
                     }

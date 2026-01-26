@@ -59,6 +59,8 @@
     <Compile Include="Commands\DeleteCommand.cs" />
     <Compile Include="Debouncer.cs" />
     <Compile Include="IconMapper.cs" />
+    <Compile Include="MEF\ContainedByCollection.cs" />
+    <Compile Include="MEF\WorkspaceFilesSearchProvider.cs" />
     <Compile Include="MEF\WorkspaceItemContextMenuController.cs" />
     <Compile Include="MEF\WorkspaceItemNodeDragDropSourceController.cs" />
     <Compile Include="MEF\WorkspaceItemNodeTooltip.cs" />

@@ -43,6 +43,13 @@ namespace WorkspaceFiles
         private GitFileStatus _cachedGitStatus = GitFileStatus.NotInRepo;
         private bool _gitStatusLoaded;
 
+        /// <summary>
+        /// The ContainedBy collection for this item, set during search.
+        /// This enables Solution Explorer search to trace items back to their parents
+        /// without relying on the source provider being called.
+        /// </summary>
+        private IAttachedCollectionSource _containedByCollection;
+
         private static readonly HashSet<Type> _supportedPatterns =
         [
             typeof(ITreeDisplayItem),
@@ -57,12 +64,25 @@ namespace WorkspaceFiles
         ];
 
         public WorkspaceItemNode(object parent, FileSystemInfo info, IgnoreList ignoreList, Microsoft.Extensions.FileSystemGlobbing.Matcher globbingMatcher)
+            : this(parent, info, ignoreList, globbingMatcher, createWatcher: true)
+        {
+        }
+
+        /// <summary>
+        /// Creates a WorkspaceItemNode, optionally without file system watcher for search-only use.
+        /// </summary>
+        /// <param name="parent">Parent node</param>
+        /// <param name="info">File system info</param>
+        /// <param name="ignoreList">Ignore list for filtering</param>
+        /// <param name="globbingMatcher">Globbing matcher for filtering</param>
+        /// <param name="createWatcher">If false, skips creating FileSystemWatcher (for search-only nodes)</param>
+        internal WorkspaceItemNode(object parent, FileSystemInfo info, IgnoreList ignoreList, Microsoft.Extensions.FileSystemGlobbing.Matcher globbingMatcher, bool createWatcher)
         {
             _ignoreList = ignoreList;
             _globbingMatcher = globbingMatcher;
 
             Info = info;
-            SourceItem = parent;
+            ParentItem = parent;
             Type = parent is WorkspaceRootNode ? WorkspaceItemType.Root : info is FileInfo ? WorkspaceItemType.File : WorkspaceItemType.Folder;
 
             SetIsCut();
@@ -75,23 +95,27 @@ namespace WorkspaceFiles
                 // or slow storage when creating many nodes during tree expansion.
                 HasItems = true;
 
-                _watcher = new FileSystemWatcher(info.FullName)
+                if (createWatcher)
                 {
-                    // Performance optimizations for file system watcher
-                    IncludeSubdirectories = false, // Only watch immediate children
-                    NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.CreationTime | NotifyFilters.LastWrite,
-                    InternalBufferSize = 32768 // Increase buffer size to handle rapid changes
-                };
-                _watcher.Renamed += OnFileSystemChanged;
-                _watcher.Deleted += OnFileSystemChanged;
-                _watcher.Created += OnFileSystemChanged;
-                _watcher.Changed += OnFileSystemChanged;
-                _watcher.Error += OnWatcherError;
-                _watcher.EnableRaisingEvents = true;
+                    _watcher = new FileSystemWatcher(info.FullName)
+                    {
+                        // Performance optimizations for file system watcher
+                        IncludeSubdirectories = false, // Only watch immediate children
+                        NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.CreationTime | NotifyFilters.LastWrite,
+                        InternalBufferSize = 32768 // Increase buffer size to handle rapid changes
+                    };
+                    _watcher.Renamed += OnFileSystemChanged;
+                    _watcher.Deleted += OnFileSystemChanged;
+                    _watcher.Created += OnFileSystemChanged;
+                    _watcher.Changed += OnFileSystemChanged;
+                    _watcher.Error += OnWatcherError;
+                    _watcher.EnableRaisingEvents = true;
+                }
             }
 
             // Load Git status asynchronously for files (folders inherit status from children)
-            if (Type == WorkspaceItemType.File)
+            // Skip for search-only nodes to avoid unnecessary work
+            if (Type == WorkspaceItemType.File && createWatcher)
             {
                 LoadGitStatusAsync().FireAndForget();
             }
@@ -114,7 +138,30 @@ namespace WorkspaceFiles
 
         public WorkspaceItemType Type { get; }
         public FileSystemInfo Info { get; set; }
-        public object SourceItem { get; }
+
+        /// <summary>
+        /// Gets the parent item for ContainedBy relationship support.
+        /// This is used during search to trace items back to their parents.
+        /// </summary>
+        public object ParentItem { get; }
+
+        /// <summary>
+        /// Gets this item as the source for the attached collection (IAttachedCollectionSource).
+        /// For IAttachedCollectionSource semantics, SourceItem should be the item itself.
+        /// </summary>
+        public object SourceItem => this;
+
+        /// <summary>
+        /// Gets or sets the ContainedBy collection for this item.
+        /// This is set during search to enable Solution Explorer to trace items back to their parents.
+        /// Following the IRelatableItem pattern from dotnet/project-system.
+        /// </summary>
+        public IAttachedCollectionSource ContainedByCollection
+        {
+            get => _containedByCollection;
+            set => _containedByCollection = value;
+        }
+
         public string Text => Info?.Name;
         public string ToolTipText => "";
         public object ToolTipContent => WorkspaceItemNodeTooltip.GetTooltip(this);
@@ -347,6 +394,86 @@ namespace WorkspaceFiles
             UpdateChildrenOnUIThreadAsync(activeNodes).FireAndForget();
         }
 
+        /// <summary>
+        /// Gets children for search purposes without modifying tree state.
+        /// This enumerates the file system directly and returns nodes that can be used
+        /// for search results without triggering property change notifications that
+        /// could corrupt the tree binding.
+        /// </summary>
+        /// <returns>Enumerable of child nodes (existing from tree or newly created for search)</returns>
+        internal IEnumerable<WorkspaceItemNode> GetChildrenForSearch()
+        {
+            // If children have already been loaded (folder was expanded), return them
+            if (_children != null && _children.Count > 0)
+            {
+                return [.. _children]; // Return a copy to avoid enumeration issues
+            }
+
+            // For unexpanded folders, enumerate file system directly without modifying _children
+            // This avoids corrupting tree state during search
+            if (Info is not DirectoryInfo dirInfo || !dirInfo.Exists)
+            {
+                return [];
+            }
+
+            return EnumerateChildrenForSearch(dirInfo);
+        }
+
+        /// <summary>
+        /// Lazily enumerates children for search using yield return to avoid allocating a full list.
+        /// </summary>
+        private IEnumerable<WorkspaceItemNode> EnumerateChildrenForSearch(DirectoryInfo dirInfo)
+        {
+            IEnumerable<FileSystemInfo> entries;
+            try
+            {
+                entries = dirInfo.EnumerateFileSystemInfos("*", SearchOption.TopDirectoryOnly);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                yield break;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                yield break;
+            }
+            catch (IOException)
+            {
+                yield break;
+            }
+
+            foreach (FileSystemInfo entry in entries)
+            {
+                var name = entry.Name;
+
+                // Skip system files and heavy directories that slow down search
+                if (IsSystemFileOrDirectory(name))
+                {
+                    continue;
+                }
+
+                var fullPath = entry.FullName;
+                if (!ShouldShowEntry(fullPath))
+                {
+                    continue;
+                }
+
+                WorkspaceItemNode node;
+                try
+                {
+                    // Create a lightweight node for search - no file watcher, no git status
+                    node = new WorkspaceItemNode(this, entry, _ignoreList, _globbingMatcher, createWatcher: false);
+                }
+                catch
+                {
+                    // Skip entries that can't be accessed
+                    continue;
+                }
+
+                yield return node;
+            }
+        }
+
         private async Task UpdateChildrenOnUIThreadAsync(List<WorkspaceItemNode> activeNodes)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -398,6 +525,31 @@ namespace WorkspaceFiles
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// System file/directory detection for search that skips only the heaviest directories.
+        /// Only filters directories that would severely impact search performance.
+        /// </summary>
+        private static bool IsSystemFileOrDirectory(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return true;
+            }
+
+            // Use span for efficient comparison without allocations
+            ReadOnlySpan<char> span = name.AsSpan();
+
+            // Skip temporary files
+            if (span[0] == '~' || span.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // Only skip the heaviest directories that severely impact search performance
+            return span.Equals(".git", StringComparison.OrdinalIgnoreCase) ||
+                   span.Equals("node_modules", StringComparison.OrdinalIgnoreCase);
         }
 
         private void OnFileSystemChanged(object sender, FileSystemEventArgs e)

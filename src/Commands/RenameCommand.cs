@@ -17,7 +17,7 @@ namespace WorkspaceFiles
             var oldItemPath = WorkspaceItemContextMenuController.CurrentItem.Info.FullName;
             var oldItemName = WorkspaceItemContextMenuController.CurrentItem.Info.Name;
 
-            var fileAttributes = File.GetAttributes(oldItemPath);
+            FileAttributes fileAttributes = File.GetAttributes(oldItemPath);
             var isDirectory = fileAttributes.HasFlag(FileAttributes.Directory);
 
             var result = TextInputDialog.Show(

@@ -5,22 +5,29 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Windows;
 using EnvDTE;
 using MAB.DotIgnore;
 using Microsoft.Internal.VisualStudio.PlatformUI;
-using Microsoft.VisualStudio.Language.Intellisense;
+using Microsoft.VisualStudio.Imaging;
+using Microsoft.VisualStudio.Imaging.Interop;
 
 namespace WorkspaceFiles
 {
-    internal class WorkspaceRootNode : IAttachedCollectionSource, INotifyPropertyChanged, IDisposable, IRefreshPattern
+    internal class WorkspaceRootNode : IAttachedCollectionSource, ITreeDisplayItem, ITreeDisplayItemWithImages, IInteractionPatternProvider, IPrioritizedComparable, IBrowsablePattern, INotifyPropertyChanged, IDisposable, IRefreshPattern
     {
         private readonly ObservableCollection<WorkspaceItemNode> _innerItems = [];
         private readonly DTE _dte;
         private readonly string _solutionDir;
+        private readonly IVsHierarchyItem _solutionHierarchyItem;
         private bool _disposed = false;
         private List<DirectoryInfo> _directories;
         private Microsoft.Extensions.FileSystemGlobbing.Matcher _matcher;
+
+        /// <summary>
+        /// The ContainedBy collection for this item, set during search.
+        /// </summary>
+        private IAttachedCollectionSource _containedByCollection;
 
         // Cache for Git repository root to avoid repeated directory traversals
         private static readonly ConcurrentDictionary<string, DirectoryInfo> _gitRootCache = new();
@@ -31,10 +38,11 @@ namespace WorkspaceFiles
         // Cache for directories that don't have .gitignore files (negative cache)
         private static readonly ConcurrentDictionary<string, bool> _noGitIgnoreCache = new();
 
-        public WorkspaceRootNode(DTE dte)
+        public WorkspaceRootNode(DTE dte, IVsHierarchyItem solutionHierarchyItem)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             _dte = dte;
+            _solutionHierarchyItem = solutionHierarchyItem;
             _solutionDir = Path.GetDirectoryName(_dte?.Solution?.FullName ?? "")?.TrimEnd('\\') + '\\';
 
             General.Saved += OnSettingsSaved;
@@ -76,7 +84,105 @@ namespace WorkspaceFiles
             BuildInnerItems();
         }
 
+        #region ITreeDisplayItem and ITreeDisplayItemWithImages
+
+        /// <summary>
+        /// Display text for the root node in search results.
+        /// </summary>
+        public string Text => "Workspace Files";
+
+        public string ToolTipText => "Files and folders from the workspace";
+
+        public object ToolTipContent => null;
+
+        public FontWeight FontWeight => FontWeights.Normal;
+
+        public System.Windows.FontStyle FontStyle => FontStyles.Normal;
+
+        public bool IsCut => false;
+
+        public ImageMoniker IconMoniker => KnownMonikers.LinkedFolderOpened;
+
+        public ImageMoniker ExpandedIconMoniker => KnownMonikers.LinkedFolderOpened;
+
+        public ImageMoniker OverlayIconMoniker => default;
+
+        public ImageMoniker StateIconMoniker => default;
+
+        public string StateToolTipText => string.Empty;
+
+        #endregion
+
+        #region IInteractionPatternProvider and IPrioritizedComparable
+
+        private static readonly HashSet<Type> _supportedPatterns =
+        [
+            typeof(ITreeDisplayItem),
+            typeof(ITreeDisplayItemWithImages),
+            typeof(IBrowsablePattern),
+        ];
+
+        public TPattern GetPattern<TPattern>() where TPattern : class
+        {
+            if (_supportedPatterns.Contains(typeof(TPattern)))
+            {
+                return this as TPattern;
+            }
+            return null;
+        }
+
+        public int Priority => 0;
+
+        public int CompareTo(object obj)
+        {
+            // WorkspaceRootNode should always appear at the end of solution children
+            return 1;
+        }
+
+        #endregion
+
+        #region IBrowsablePattern
+
+        public object GetBrowseObject() => null;
+
+        #endregion
+
+        /// <summary>
+        /// Gets the parent item (solution hierarchy item) for ContainedBy relationship support.
+        /// This is used during search to trace this node back to the solution.
+        /// </summary>
+        public object ParentItem => _solutionHierarchyItem;
+
+        /// <summary>
+        /// Gets this item as the source for the attached collection (IAttachedCollectionSource).
+        /// For IAttachedCollectionSource semantics, SourceItem should be the item itself.
+        /// </summary>
         public object SourceItem => this;
+
+        /// <summary>
+        /// Gets or sets the ContainedBy collection for this item.
+        /// This is set during search to enable Solution Explorer to trace items back to their parents.
+        /// </summary>
+        public IAttachedCollectionSource ContainedByCollection
+        {
+            get => _containedByCollection;
+            set => _containedByCollection = value;
+        }
+
+        /// <summary>
+        /// Gets the configured workspace directories for search enumeration.
+        /// </summary>
+        public IReadOnlyList<DirectoryInfo> Directories => _directories;
+
+        /// <summary>
+        /// Gets the solution hierarchy item for search results.
+        /// </summary>
+        public IVsHierarchyItem SolutionHierarchyItem => _solutionHierarchyItem;
+
+        /// <summary>
+        /// Gets the globbing matcher for filtering files.
+        /// </summary>
+        public Microsoft.Extensions.FileSystemGlobbing.Matcher GlobbingMatcher => _matcher;
 
         public bool HasItems => General.Instance.Enabled && _directories?.Count > 0;
 
