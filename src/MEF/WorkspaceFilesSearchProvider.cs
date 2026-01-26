@@ -20,6 +20,7 @@ namespace WorkspaceFiles
     /// Performance optimizations:
     /// - Breadth-first search yields results at each level before going deeper
     /// - Parallel processing of subfolders at each level
+    /// - Respects cancellation token for user cancellation
     /// - Early termination when result limit is reached
     /// </remarks>
     [Export(typeof(ISearchProvider))]
@@ -47,6 +48,13 @@ namespace WorkspaceFiles
                 return;
             }
 
+            // Get the cancellation token from parameters - VS will cancel when user clears search
+            CancellationToken cancellationToken = parameters.CancellationToken;
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
             // Ensure the root node exists - this is needed for ContainedBy relationship to work
             WorkspaceRootNode rootNode = sourceProvider.RootNode;
             if (rootNode == null)
@@ -67,7 +75,7 @@ namespace WorkspaceFiles
                 return;
             }
 
-            SearchBreadthFirstParallel(items.OfType<WorkspaceItemNode>(), searchPattern, resultAccumulator);
+            SearchBreadthFirstParallel(items.OfType<WorkspaceItemNode>(), searchPattern, resultAccumulator, cancellationToken);
         }
 
         /// <summary>
@@ -75,55 +83,81 @@ namespace WorkspaceFiles
         /// This yields results faster by searching shallower levels first and processing
         /// multiple folders in parallel.
         /// </summary>
-        private void SearchBreadthFirstParallel(
+        private static void SearchBreadthFirstParallel(
             IEnumerable<WorkspaceItemNode> rootItems,
             string searchPattern,
-            Action<ISearchResult> resultAccumulator)
+            Action<ISearchResult> resultAccumulator,
+            CancellationToken cancellationToken)
         {
             var resultCount = 0;
 
             // Queue of folders to process at the next level
             var currentLevel = new List<WorkspaceItemNode>(rootItems);
 
-            while (currentLevel.Count > 0 && resultCount < _maxSearchResults)
+            // Reusable search result instance to reduce allocations
+            // (VS calls GetDisplayItem() which returns the node, so we can reuse the wrapper)
+
+            while (currentLevel.Count > 0 && resultCount < _maxSearchResults && !cancellationToken.IsCancellationRequested)
             {
                 // Collect results and subfolders from the current level in parallel
                 var results = new ConcurrentBag<WorkspaceItemNode>();
                 var nextLevel = new ConcurrentBag<WorkspaceItemNode>();
 
                 // Process all folders at this level in parallel
-                Parallel.ForEach(
-                    currentLevel,
-                    new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-                    (node, loopState) =>
-                    {
-                        // Check early termination
-                        if (Volatile.Read(ref resultCount) >= _maxSearchResults)
+                try
+                {
+                    Parallel.ForEach(
+                        currentLevel,
+                        new ParallelOptions
                         {
-                            loopState.Stop();
-                            return;
-                        }
-
-                        // Check if this node matches
-                        if (MatchesSearch(node.Text, searchPattern))
+                            MaxDegreeOfParallelism = Environment.ProcessorCount,
+                            CancellationToken = cancellationToken
+                        },
+                        (node, loopState) =>
                         {
-                            results.Add(node);
-                        }
-
-                        // If this is a folder, get its children for the next level
-                        if (node.Type == WorkspaceItemType.Folder || node.Type == WorkspaceItemType.Root)
-                        {
-                            foreach (WorkspaceItemNode child in node.GetChildrenForSearch())
+                            // Check early termination
+                            if (Volatile.Read(ref resultCount) >= _maxSearchResults || cancellationToken.IsCancellationRequested)
                             {
-                                nextLevel.Add(child);
+                                loopState.Stop();
+                                return;
                             }
-                        }
-                    });
+
+                            // Check if this node matches
+                            if (MatchesSearch(node.Text, searchPattern))
+                            {
+                                results.Add(node);
+                            }
+
+                            // If this is a folder, get its children for the next level
+                            if (node.Type == WorkspaceItemType.Folder || node.Type == WorkspaceItemType.Root)
+                            {
+                                foreach (WorkspaceItemNode child in node.GetChildrenForSearch())
+                                {
+                                    if (cancellationToken.IsCancellationRequested)
+                                    {
+                                        break;
+                                    }
+                                    nextLevel.Add(child);
+                                }
+                            }
+                        });
+                }
+                catch (OperationCanceledException)
+                {
+                    // Search was cancelled by user - exit gracefully
+                    return;
+                }
+
+                // Check cancellation before emitting results
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
 
                 // Emit results from this level (on the calling thread for thread safety)
                 foreach (WorkspaceItemNode match in results)
                 {
-                    if (resultCount >= _maxSearchResults)
+                    if (resultCount >= _maxSearchResults || cancellationToken.IsCancellationRequested)
                     {
                         break;
                     }
