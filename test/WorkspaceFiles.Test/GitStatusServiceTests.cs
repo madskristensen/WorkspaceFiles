@@ -1,4 +1,6 @@
+using System;
 using System.IO;
+using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using WorkspaceFiles.Services;
 
@@ -7,6 +9,12 @@ namespace WorkspaceFiles.Test
     [TestClass]
     public class GitStatusServiceTests
     {
+        [TestInitialize]
+        public void Initialize()
+        {
+            GitStatusService.InvalidateCache();
+        }
+
         [DataTestMethod]
         [DataRow((int)GitFileStatus.Unmodified, "Unchanged")]
         [DataRow((int)GitFileStatus.Modified, "Pending - Edit")]
@@ -61,6 +69,7 @@ namespace WorkspaceFiles.Test
         [DataRow("AA src/conflict.cs", (int)GitFileStatus.Conflict, "src/conflict.cs")]
         [DataRow("DD src/conflict.cs", (int)GitFileStatus.Conflict, "src/conflict.cs")]
         [DataRow(" M \"folder/file name.cs\"", (int)GitFileStatus.Modified, "folder/file name.cs")]
+        [DataRow("R  \"old a.cs\" -> \"new b.cs\"", (int)GitFileStatus.Renamed, "new b.cs")]
         [DataRow("MD src/deleted.cs", (int)GitFileStatus.Deleted, "src/deleted.cs")]
         [DataRow("DM src/modified.cs", (int)GitFileStatus.Modified, "src/modified.cs")]
         public void WhenPorcelainLineIsValidThenExpectedStatusAndPathAreParsed(string line, int expectedStatusValue, string expectedPathSuffix)
@@ -84,6 +93,61 @@ namespace WorkspaceFiles.Test
             Assert.IsFalse(parsed);
             Assert.IsNull(fullPath);
             Assert.AreEqual(GitFileStatus.NotInRepo, status);
+        }
+
+        [TestMethod]
+        public void WhenInvalidateCacheIsCalledThenCachedStatusIsCleared()
+        {
+            var filePath = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "WorkspaceFilesTests", "cached.txt"));
+            SeedStatusCache(filePath, GitFileStatus.Modified);
+
+            GitStatusService.InvalidateCache();
+
+            var status = GitStatusService.GetCachedFileStatus(filePath);
+            Assert.AreEqual(GitFileStatus.NotInRepo, status);
+        }
+
+        [TestMethod]
+        public void WhenMarkCacheStaleIsCalledThenRepoRefreshStateIsClearedButStatusCacheRemains()
+        {
+            var filePath = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "WorkspaceFilesTests", "stale.txt"));
+            var repoRoot = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "WorkspaceFilesTests", "Repo"));
+            SeedStatusCache(filePath, GitFileStatus.Modified);
+            SeedRepoRefresh(repoRoot, DateTime.UtcNow);
+
+            GitStatusService.MarkCacheStale();
+
+            var status = GitStatusService.GetCachedFileStatus(filePath);
+            Assert.AreEqual(GitFileStatus.Modified, status);
+            Assert.AreEqual(0, GetRepoLastRefreshCount());
+        }
+
+        private static void SeedStatusCache(string filePath, GitFileStatus status)
+        {
+            var serviceType = typeof(GitStatusService);
+            var cacheField = serviceType.GetField("_statusCache", BindingFlags.NonPublic | BindingFlags.Static);
+            var cache = cacheField.GetValue(null);
+
+            var cachedStatusType = serviceType.GetNestedType("CachedStatus", BindingFlags.NonPublic);
+            var cachedStatus = Activator.CreateInstance(cachedStatusType);
+            cachedStatusType.GetProperty("Status").SetValue(cachedStatus, status);
+            cachedStatusType.GetProperty("Timestamp").SetValue(cachedStatus, DateTime.UtcNow);
+
+            cache.GetType().GetMethod("TryAdd").Invoke(cache, new object[] { filePath, cachedStatus });
+        }
+
+        private static void SeedRepoRefresh(string repoRoot, DateTime timestamp)
+        {
+            var refreshField = typeof(GitStatusService).GetField("_repoLastRefresh", BindingFlags.NonPublic | BindingFlags.Static);
+            var refreshCache = (System.Collections.Concurrent.ConcurrentDictionary<string, DateTime>)refreshField.GetValue(null);
+            refreshCache[repoRoot] = timestamp;
+        }
+
+        private static int GetRepoLastRefreshCount()
+        {
+            var refreshField = typeof(GitStatusService).GetField("_repoLastRefresh", BindingFlags.NonPublic | BindingFlags.Static);
+            var refreshCache = (System.Collections.Concurrent.ConcurrentDictionary<string, DateTime>)refreshField.GetValue(null);
+            return refreshCache.Count;
         }
     }
 }

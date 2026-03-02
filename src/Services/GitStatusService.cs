@@ -368,7 +368,7 @@ namespace WorkspaceFiles.Services
 
             var indexStatus = line[0];
             var workTreeStatus = line[1];
-            var relativePath = line.Substring(3).Trim().Trim('"');
+            var relativePath = line.Substring(3).Trim();
 
             if (string.IsNullOrEmpty(relativePath))
             {
@@ -381,6 +381,8 @@ namespace WorkspaceFiles.Services
                 var parts = relativePath.Split([" -> "], StringSplitOptions.None);
                 relativePath = parts.Length > 1 ? parts[1] : parts[0];
             }
+
+            relativePath = relativePath.Trim().Trim('"');
 
             // Normalize path separators (git uses forward slashes)
             relativePath = relativePath.Replace('/', Path.DirectorySeparatorChar);

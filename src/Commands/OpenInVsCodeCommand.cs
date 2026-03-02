@@ -18,12 +18,7 @@ namespace WorkspaceFiles
 
             var args = isDirectory ? "." : $"\"{path}\"";
 
-            var start = new ProcessStartInfo()
-            {
-                FileName = "code",
-                Arguments = args,
-                UseShellExecute = true,
-            };
+            var start = CreateVsCodeStartInfo(args);
 
             if (isDirectory)
             {
@@ -44,6 +39,40 @@ namespace WorkspaceFiles
                 };
                 _ = TryStart(fallback);
             }
+        }
+
+        private static ProcessStartInfo CreateVsCodeStartInfo(string arguments)
+        {
+            return new ProcessStartInfo
+            {
+                FileName = FindVsCodeExecutablePath(),
+                Arguments = arguments,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
+            };
+        }
+
+        private static string FindVsCodeExecutablePath()
+        {
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+
+            var candidates = new[]
+            {
+                Path.Combine(localAppData, "Programs", "Microsoft VS Code", "Code.exe"),
+                Path.Combine(programFiles, "Microsoft VS Code", "Code.exe"),
+            };
+
+            foreach (var candidate in candidates)
+            {
+                if (File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            return "code.exe";
         }
 
         private static bool TryStart(ProcessStartInfo startInfo)
