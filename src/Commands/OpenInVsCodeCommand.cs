@@ -16,23 +16,47 @@ namespace WorkspaceFiles
             var path = WorkspaceItemContextMenuController.CurrentItem.Info.FullName;
             var isDirectory = Directory.Exists(path);
 
-            var args = isDirectory ? "." : $"{path}";
+            var args = isDirectory ? "." : $"\"{path}\"";
 
             var start = new ProcessStartInfo()
             {
-                FileName = $"cmd.exe",
-                Arguments = $"/C code \"{args}\"",
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                WindowStyle = ProcessWindowStyle.Hidden,
+                FileName = "code",
+                Arguments = args,
+                UseShellExecute = true,
             };
 
             if (isDirectory)
             {
                 start.WorkingDirectory = path;
             }
+            else
+            {
+                start.WorkingDirectory = Path.GetDirectoryName(path);
+            }
 
-            Process.Start(start);
+            if (!TryStart(start))
+            {
+                var fallback = new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = isDirectory ? $"\"{path}\"" : $"/select, \"{path}\"",
+                    UseShellExecute = true,
+                };
+                _ = TryStart(fallback);
+            }
+        }
+
+        private static bool TryStart(ProcessStartInfo startInfo)
+        {
+            try
+            {
+                _ = Process.Start(startInfo);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

@@ -43,8 +43,8 @@ namespace WorkspaceFiles.Services
     {
         private static readonly ConcurrentDictionary<string, CachedStatus> _statusCache = new(StringComparer.OrdinalIgnoreCase);
         private static readonly TimeSpan _cacheExpiration = TimeSpan.FromSeconds(5);
-        private static readonly object _refreshLock = new();
-        private static DateTime _lastRefresh = DateTime.MinValue;
+        private static readonly ConcurrentDictionary<string, DateTime> _repoLastRefresh = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, object> _repoRefreshLocks = new(StringComparer.OrdinalIgnoreCase);
 
         private sealed class CachedStatus
         {
@@ -126,16 +126,19 @@ namespace WorkspaceFiles.Services
                 return GitFileStatus.NotInRepo;
             }
 
-            // Refresh status for all files if cache is stale
-            if (DateTime.UtcNow - _lastRefresh > _cacheExpiration)
+            repoRoot = NormalizeDirectoryPath(repoRoot);
+
+            // Refresh status for all files if this repo cache is stale
+            if (IsRefreshRequired(repoRoot))
             {
-                lock (_refreshLock)
+                var refreshLock = _repoRefreshLocks.GetOrAdd(repoRoot, _ => new object());
+                lock (refreshLock)
                 {
                     // Double-check inside lock
-                    if (DateTime.UtcNow - _lastRefresh > _cacheExpiration)
+                    if (IsRefreshRequired(repoRoot))
                     {
                         RefreshStatusCache(repoRoot);
-                        _lastRefresh = DateTime.UtcNow;
+                        _repoLastRefresh[repoRoot] = DateTime.UtcNow;
                     }
                 }
             }
@@ -204,7 +207,7 @@ namespace WorkspaceFiles.Services
         public static void InvalidateCache()
         {
             _statusCache.Clear();
-            _lastRefresh = DateTime.MinValue;
+            _repoLastRefresh.Clear();
         }
 
         /// <summary>
@@ -214,7 +217,7 @@ namespace WorkspaceFiles.Services
         /// </summary>
         public static void MarkCacheStale()
         {
-            _lastRefresh = DateTime.MinValue;
+            _repoLastRefresh.Clear();
         }
 
         private static GitFileStatus GetParentDirectoryStatus(string filePath)
@@ -259,6 +262,17 @@ namespace WorkspaceFiles.Services
             return null;
         }
 
+        private static bool IsRefreshRequired(string repoRoot)
+        {
+            return !_repoLastRefresh.TryGetValue(repoRoot, out DateTime lastRefresh) ||
+                   DateTime.UtcNow - lastRefresh > _cacheExpiration;
+        }
+
+        private static string NormalizeDirectoryPath(string path)
+        {
+            return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+
         private static void RefreshStatusCache(string repoRoot)
         {
             try
@@ -266,7 +280,7 @@ namespace WorkspaceFiles.Services
                 // Clear existing cache entries for this repo before refreshing.
                 // This is essential so that files that become "clean" (no longer in git status)
                 // are properly removed from cache and will return Unmodified status.
-                var repoRootNormalized = Path.GetFullPath(repoRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                var repoRootNormalized = NormalizeDirectoryPath(repoRoot) + Path.DirectorySeparatorChar;
                 var keysToRemove = new List<string>();
                 foreach (var key in _statusCache.Keys)
                 {

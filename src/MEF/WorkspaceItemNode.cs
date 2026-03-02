@@ -36,9 +36,10 @@ namespace WorkspaceFiles
         IDragDropSourcePattern,
         IDragDropTargetPattern
     {
-        private readonly FileSystemWatcher _watcher;
+        private FileSystemWatcher _watcher;
         private readonly IgnoreList _ignoreList;
         private readonly Microsoft.Extensions.FileSystemGlobbing.Matcher _globbingMatcher;
+        private readonly bool _createWatcher;
         private BulkObservableCollection<WorkspaceItemNode> _children;
         private GitFileStatus _cachedGitStatus = GitFileStatus.NotInRepo;
         private bool _gitStatusLoaded;
@@ -80,6 +81,7 @@ namespace WorkspaceFiles
         {
             _ignoreList = ignoreList;
             _globbingMatcher = globbingMatcher;
+            _createWatcher = createWatcher;
 
             Info = info;
             ParentItem = parent;
@@ -95,22 +97,6 @@ namespace WorkspaceFiles
                 // or slow storage when creating many nodes during tree expansion.
                 HasItems = true;
 
-                if (createWatcher)
-                {
-                    _watcher = new FileSystemWatcher(info.FullName)
-                    {
-                        // Performance optimizations for file system watcher
-                        IncludeSubdirectories = false, // Only watch immediate children
-                        NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.CreationTime | NotifyFilters.LastWrite,
-                        InternalBufferSize = 32768 // Increase buffer size to handle rapid changes
-                    };
-                    _watcher.Renamed += OnFileSystemChanged;
-                    _watcher.Deleted += OnFileSystemChanged;
-                    _watcher.Created += OnFileSystemChanged;
-                    _watcher.Changed += OnFileSystemChanged;
-                    _watcher.Error += OnWatcherError;
-                    _watcher.EnableRaisingEvents = true;
-                }
             }
 
             // Load Git status asynchronously for files (folders inherit status from children)
@@ -127,6 +113,11 @@ namespace WorkspaceFiles
             // Attempt to restart it
             try
             {
+                if (_watcher == null)
+                {
+                    return;
+                }
+
                 _watcher.EnableRaisingEvents = false;
                 _watcher.EnableRaisingEvents = true;
             }
@@ -310,6 +301,8 @@ namespace WorkspaceFiles
 
         private void RefreshChildren()
         {
+            EnsureWatcherInitialized();
+
             _children ??= [];
 
             // Refresh the cached state of the FileSystemInfo before checking Exists
@@ -392,6 +385,34 @@ namespace WorkspaceFiles
             // UI thread is required for collection updates to properly refresh the tree view
             // Use fire-and-forget async to avoid blocking the background thread
             UpdateChildrenOnUIThreadAsync(activeNodes).FireAndForget();
+        }
+
+        private void EnsureWatcherInitialized()
+        {
+            if (!_createWatcher || _watcher != null || Info is not DirectoryInfo)
+            {
+                return;
+            }
+
+            try
+            {
+                _watcher = new FileSystemWatcher(Info.FullName)
+                {
+                    IncludeSubdirectories = false,
+                    NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.CreationTime | NotifyFilters.LastWrite,
+                    InternalBufferSize = 32768
+                };
+                _watcher.Renamed += OnFileSystemChanged;
+                _watcher.Deleted += OnFileSystemChanged;
+                _watcher.Created += OnFileSystemChanged;
+                _watcher.Changed += OnFileSystemChanged;
+                _watcher.Error += OnWatcherError;
+                _watcher.EnableRaisingEvents = true;
+            }
+            catch
+            {
+                // Ignore watcher creation failures to keep tree usable.
+            }
         }
 
         /// <summary>

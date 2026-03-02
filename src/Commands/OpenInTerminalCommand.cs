@@ -13,7 +13,6 @@ namespace WorkspaceFiles
 
         protected override void Execute(object sender, EventArgs e)
         {
-            WorkspaceItemNode item = WorkspaceItemContextMenuController.CurrentItem;
             var path = WorkspaceItemContextMenuController.CurrentItem.Info.FullName;
 
             if (!Directory.Exists(path))
@@ -21,19 +20,45 @@ namespace WorkspaceFiles
                 path = Path.GetDirectoryName(path);
             }
 
-            var exe = "cmd.exe";
-            var args = $"/c wt.exe -d \"{path}\"";
-
-            var pi = new ProcessStartInfo
+            if (string.IsNullOrWhiteSpace(path))
             {
-                FileName = exe,
-                Arguments = args,
+                return;
+            }
+
+            var terminal = new ProcessStartInfo
+            {
+                FileName = "wt.exe",
+                Arguments = $"-d \"{path}\"",
                 WorkingDirectory = path,
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                WindowStyle = ProcessWindowStyle.Hidden,
+                UseShellExecute = true,
             };
-            Process.Start(pi);
+
+            if (!TryStart(terminal))
+            {
+                var fallback = new ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments = $"-NoExit -Command \"Set-Location -LiteralPath '{path.Replace("'", "''")}'\"",
+                    WorkingDirectory = path,
+                    UseShellExecute = true,
+                };
+
+                _ = TryStart(fallback);
+            }
+
+        }
+
+        private static bool TryStart(ProcessStartInfo startInfo)
+        {
+            try
+            {
+                _ = Process.Start(startInfo);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
 
         }
     }
