@@ -310,39 +310,13 @@ namespace WorkspaceFiles.Services
                     string line;
                     while ((line = reader.ReadLine()) != null)
                     {
-                        if (line.Length < 3)
+                        if (TryParsePorcelainStatusLine(line, repoRoot, out string fullPath, out GitFileStatus status))
                         {
-                            continue;
-                        }
-
-                        var indexStatus = line[0];
-                        var workTreeStatus = line[1];
-                        var relativePath = line.Substring(3).Trim().Trim('"');
-
-                        // Handle renamed files: "R  old -> new"
-                        if (relativePath.Contains(" -> "))
-                        {
-                            var parts = relativePath.Split([" -> "], StringSplitOptions.None);
-                            relativePath = parts.Length > 1 ? parts[1] : parts[0];
-                        }
-
-                        // Normalize path separators (git uses forward slashes)
-                        relativePath = relativePath.Replace('/', Path.DirectorySeparatorChar);
-
-                        try
-                        {
-                            var fullPath = Path.GetFullPath(Path.Combine(repoRoot, relativePath));
-                            GitFileStatus status = ParseGitStatus(indexStatus, workTreeStatus);
-
                             _statusCache[fullPath] = new CachedStatus
                             {
                                 Status = status,
                                 Timestamp = DateTime.UtcNow
                             };
-                        }
-                        catch
-                        {
-                            // Skip paths that can't be resolved
                         }
                     }
                 }
@@ -380,6 +354,47 @@ namespace WorkspaceFiles.Services
                     _ => GitFileStatus.Unmodified,
                 },
             };
+        }
+
+        internal static bool TryParsePorcelainStatusLine(string line, string repoRoot, out string fullPath, out GitFileStatus status)
+        {
+            fullPath = null;
+            status = GitFileStatus.NotInRepo;
+
+            if (string.IsNullOrWhiteSpace(line) || line.Length < 3 || string.IsNullOrWhiteSpace(repoRoot))
+            {
+                return false;
+            }
+
+            var indexStatus = line[0];
+            var workTreeStatus = line[1];
+            var relativePath = line.Substring(3).Trim().Trim('"');
+
+            if (string.IsNullOrEmpty(relativePath))
+            {
+                return false;
+            }
+
+            // Handle renamed files: "R  old -> new"
+            if (relativePath.Contains(" -> "))
+            {
+                var parts = relativePath.Split([" -> "], StringSplitOptions.None);
+                relativePath = parts.Length > 1 ? parts[1] : parts[0];
+            }
+
+            // Normalize path separators (git uses forward slashes)
+            relativePath = relativePath.Replace('/', Path.DirectorySeparatorChar);
+
+            try
+            {
+                fullPath = Path.GetFullPath(Path.Combine(repoRoot, relativePath));
+                status = ParseGitStatus(indexStatus, workTreeStatus);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static string RunGitCommand(string workingDirectory, string arguments)
