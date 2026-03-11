@@ -22,6 +22,7 @@ or get the [CI build][vsixgallery].
 - **Search Support** — Use Solution Explorer's search to find files across physical folders
 - **.gitignore Aware** — Ignored files are automatically grayed out for easy identification
 - **Image Previews** — Hover over image files to see a thumbnail preview
+- **Open With...** — Open any file with a specific Visual Studio editor
 - **Customizable Filters** — Control which files and folders are visible
 - **Seamless Integration** — Works naturally within the familiar Solution Explorer
 
@@ -52,6 +53,12 @@ Files and folders matching a pattern in the `.gitignore` file are automatically 
 ### Image Hover Preview
 
 Hovering over image files shows a preview tooltip of the image—no need to open files just to see what they contain.
+
+### Open With...
+
+Right-click any file and select **Open With...** to choose from the available Visual Studio editors.
+
+This is useful when you want to open the same file in a different editor (for example, source view, designer view, or XML editor) without leaving Solution Explorer.
 
 ### Customizable Filters
 
