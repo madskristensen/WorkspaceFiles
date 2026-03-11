@@ -1,0 +1,65 @@
+<vsui:DialogWindow
+    x:Class="WorkspaceFiles.OpenWithDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
+    xmlns:vsui="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+    xmlns:shell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
+    Title="Open With"
+    Width="520" Height="380"
+    MinWidth="420" MinHeight="300"
+    WindowStartupLocation="CenterOwner"
+    ShowInTaskbar="False"
+    WindowStyle="None"
+    AllowsTransparency="True"
+    ResizeMode="NoResize"
+    HasMinimizeButton="False"
+    HasMaximizeButton="False"
+    toolkit:Themes.UseVsTheme="True"
+    Background="{DynamicResource {x:Static vsui:EnvironmentColors.ToolWindowBackgroundBrushKey}}">
+
+    <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid
+                Grid.Row="0"
+                Background="{DynamicResource {x:Static vsui:EnvironmentColors.ToolWindowBackgroundBrushKey}}"
+                MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <TextBlock
+                    Margin="12,8,0,8"
+                    VerticalAlignment="Center"
+                    Text="Open With"
+                    Foreground="{DynamicResource {x:Static vsui:EnvironmentColors.ToolWindowTextBrushKey}}" />
+            </Grid>
+
+            <ListBox
+                x:Name="_listEditors"
+                Grid.Row="1"
+                Margin="12,8,12,8"
+                Style="{DynamicResource {x:Static shell:VsResourceKeys.ThemedDialogListBoxStyleKey}}"
+                MouseDoubleClick="ListEditors_MouseDoubleClick" />
+
+            <StackPanel
+                Grid.Row="2"
+                Margin="12,0,12,12"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right">
+                <Button
+                    Content="OK"
+                    Width="75"
+                    IsDefault="True"
+                    Margin="0,0,8,0"
+                    Click="BtnOK_Click"
+                    Style="{DynamicResource {x:Static shell:VsResourceKeys.ThemedDialogButtonStyleKey}}" />
+                <Button
+                    Content="Cancel"
+                    Width="75"
+                    IsCancel="True"
+                    Style="{DynamicResource {x:Static shell:VsResourceKeys.ThemedDialogButtonStyleKey}}" />
+            </StackPanel>
+    </Grid>
+</vsui:DialogWindow>
