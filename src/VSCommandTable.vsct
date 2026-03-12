@@ -193,6 +193,16 @@
         </Strings>
       </Button>
 
+      <Button guid="WorkspaceFiles" id="ConvertToSolutionFolder" priority="0x1010" type="Button">
+        <Parent guid="WorkspaceFiles" id="FolderOperationsGroup" />
+        <Icon guid="ImageCatalogGuid" id="MoveToFolder" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Add as S&amp;olution Folder</ButtonText>
+          <LocCanonicalName>.FileExplorer.AddAsSolutionFolder</LocCanonicalName>
+        </Strings>
+      </Button>
+
     </Buttons>
   </Commands>
 
@@ -268,6 +278,7 @@
       <IDSymbol name="OpenInVsCode" value="0x1002" />
       <IDSymbol name="OpenInTerminal" value="0x1003" />
       <IDSymbol name="OpenWithEditor" value="0x1004" />
+      <IDSymbol name="ConvertToSolutionFolder" value="0x1005" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

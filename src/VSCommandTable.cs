@@ -49,5 +49,6 @@ namespace WorkspaceFiles
         public const int OpenInVsCode = 0x1002;
         public const int OpenInTerminal = 0x1003;
         public const int OpenWithEditor = 0x1004;
+        public const int ConvertToSolutionFolder = 0x1005;
     }
 }
