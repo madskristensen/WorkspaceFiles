@@ -406,19 +406,16 @@ namespace WorkspaceFiles
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public Task RefreshAsync()
+        public async Task RefreshAsync()
         {
-            // The root node's RefreshAsync is called when the user clicks the Solution Explorer
-            // refresh button. We intentionally do NOT cascade refresh calls to children because:
-            // 1. Each child WorkspaceItemNode has its own FileSystemWatcher that handles changes
-            // 2. Cascading RefreshAsync calls causes children to rebuild their _children collections,
-            //    which can incorrectly change HasItems values and collapse tree nodes
-            //
-            // The root node only needs to handle structural changes to its immediate children
-            // (root folders being added/removed), which is handled by OnAddFolderRequested,
-            // OnRemoveFolderRequested, and the child FileSystemWatchers.
-
-            return Task.CompletedTask;
+            // Cascade refresh to all immediate children so the Solution Explorer refresh
+            // button and the context menu Refresh command re-read the file system.
+            // Each child's RefreshAsync already guards against unexpanded nodes and uses
+            // debouncing, so this is safe to call broadly.
+            foreach (WorkspaceItemNode child in _innerItems.ToArray())
+            {
+                await child.RefreshAsync();
+            }
         }
 
         public void CancelLoad()

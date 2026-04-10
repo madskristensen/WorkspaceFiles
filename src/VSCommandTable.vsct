@@ -203,6 +203,16 @@
         </Strings>
       </Button>
 
+      <Button guid="WorkspaceFiles" id="Refresh" priority="0x0100" type="Button">
+        <Parent guid="WorkspaceFiles" id="FolderOperationsGroup" />
+        <Icon guid="ImageCatalogGuid" id="Refresh" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Re&amp;fresh</ButtonText>
+          <LocCanonicalName>.FileExplorer.Refresh</LocCanonicalName>
+        </Strings>
+      </Button>
+
     </Buttons>
   </Commands>
 
@@ -242,6 +252,9 @@
     <CommandPlacement guid="WorkspaceFiles" id="Delete" priority="400">
       <Parent guid="WorkspaceFiles" id="FolderOperationsGroup" />
     </CommandPlacement>
+    <CommandPlacement guid="WorkspaceFiles" id="Refresh" priority="0x0100">
+      <Parent guid="WorkspaceFiles" id="RootOperationsGroup" />
+    </CommandPlacement>
   </CommandPlacements>
 
   <Symbols>
@@ -279,6 +292,7 @@
       <IDSymbol name="OpenInTerminal" value="0x1003" />
       <IDSymbol name="OpenWithEditor" value="0x1004" />
       <IDSymbol name="ConvertToSolutionFolder" value="0x1005" />
+      <IDSymbol name="Refresh" value="0x1006" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>
