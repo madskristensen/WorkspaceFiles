@@ -51,5 +51,6 @@ namespace WorkspaceFiles
         public const int OpenWithEditor = 0x1004;
         public const int ConvertToSolutionFolder = 0x1005;
         public const int Refresh = 0x1006;
+        public const int ExecuteFile = 0x1007;
     }
 }

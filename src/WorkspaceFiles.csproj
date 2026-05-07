@@ -60,6 +60,7 @@
     <Compile Include="Commands\EnableWorkspaceCommand.cs" />
     <Compile Include="Commands\OpenInExplorerCommand.cs" />
     <Compile Include="Commands\DeleteCommand.cs" />
+    <Compile Include="Commands\ExecuteFileCommand.cs" />
     <Compile Include="Debouncer.cs" />
     <Compile Include="Dialogs\EditorInfo.cs" />
     <Page Include="Dialogs\OpenWithDialog.xaml">
