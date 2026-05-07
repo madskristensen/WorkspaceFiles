@@ -8,7 +8,7 @@ namespace WorkspaceFiles
     internal sealed class ExecuteFileCommand : BaseCommand<ExecuteFileCommand>
     {
         private static readonly HashSet<string> _executableExtensions =
-            [with(StringComparer.OrdinalIgnoreCase), ".ps1", ".bat", ".cmd", ".exe"];
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".ps1", ".bat", ".cmd", ".exe" };
 
         protected override void BeforeQueryStatus(EventArgs e)
         {
