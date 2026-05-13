@@ -41,7 +41,7 @@ jobs:
 
     - name: Increment VSIX version
       id: vsix_version
-      uses: madskristensen/vsix-version-stamp@v1.1
+      uses: madskristensen/vsix-version-stamp@v2
       with:
         manifest-file: ${{ env.VsixManifestPath }}
         vsix-token-source-file: ${{ env.VsixManifestSourcePath }}
@@ -85,13 +85,13 @@ jobs:
           name: ${{ github.event.repository.name }}.vsix
 
       - name: Upload to Open VSIX
-        uses: madskristensen/publish-vsixgallery@v1
+        uses: madskristensen/publish-vsixgallery@v1.1
         with:
           vsix-file: ${{ github.event.repository.name }}.vsix
 
       - name: Publish extension to Marketplace
         if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]') }}
-        uses: madskristensen/publish-marketplace@v1.15
+        uses: madskristensen/publish-marketplace@v2
         with:
           extension-file: '${{ github.event.repository.name }}.vsix'
           publish-manifest-file: 'vs-publish.json'
