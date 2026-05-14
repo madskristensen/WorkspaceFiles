@@ -5,6 +5,7 @@
 # File Explorer for Visual Studio
 
 [![Build](https://github.com/madskristensen/WorkspaceFiles/actions/workflows/build.yaml/badge.svg)](https://github.com/madskristensen/WorkspaceFiles/actions/workflows/build.yaml)
+[![Install from VSIX Gallery](https://www.vsixgallery.com/badge/WorkspaceFiles.e5308ac4-ca47-4992-945b-9b144a10c2d0.svg)][vsixgallery]
 ![GitHub Sponsors](https://img.shields.io/github/sponsors/madskristensen)
 
 Download this extension from the [Visual Studio Marketplace][marketplace]
