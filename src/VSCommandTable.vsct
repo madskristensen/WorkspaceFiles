@@ -213,6 +213,17 @@
         </Strings>
       </Button>
 
+      <Button guid="WorkspaceFiles" id="ExecuteFile" priority="0x0050" type="Button">
+        <Parent guid="WorkspaceFiles" id="FileContextMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="Play" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>E&amp;xecute File</ButtonText>
+          <LocCanonicalName>.FileExplorer.ExecuteFile</LocCanonicalName>
+        </Strings>
+      </Button>
+
     </Buttons>
   </Commands>
 
@@ -293,6 +304,7 @@
       <IDSymbol name="OpenWithEditor" value="0x1004" />
       <IDSymbol name="ConvertToSolutionFolder" value="0x1005" />
       <IDSymbol name="Refresh" value="0x1006" />
+      <IDSymbol name="ExecuteFile" value="0x1007" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>
