@@ -20,7 +20,7 @@ jobs:
     env:
       Configuration: Release
       DeployExtension: False
-      Solution: WorkspaceFiles.sln
+      Solution: WorkspaceFiles.slnx
       TestProject: test\WorkspaceFiles.Test\WorkspaceFiles.Test.csproj
       VsixManifestPath: src\source.extension.vsixmanifest
       VsixManifestSourcePath: src\source.extension.cs
