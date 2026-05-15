@@ -11,6 +11,7 @@ using MAB.DotIgnore;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Imaging.Interop;
+using WorkspaceFiles.Services;
 
 namespace WorkspaceFiles
 {
@@ -19,6 +20,7 @@ namespace WorkspaceFiles
         private readonly ObservableCollection<WorkspaceItemNode> _innerItems = [];
         private readonly DTE _dte;
         private readonly string _solutionDir;
+        private readonly string _solutionFullPath;
         private readonly IVsHierarchyItem _solutionHierarchyItem;
         private bool _disposed = false;
         private List<DirectoryInfo> _directories;
@@ -43,7 +45,8 @@ namespace WorkspaceFiles
             ThreadHelper.ThrowIfNotOnUIThread();
             _dte = dte;
             _solutionHierarchyItem = solutionHierarchyItem;
-            _solutionDir = Path.GetDirectoryName(_dte?.Solution?.FullName ?? "")?.TrimEnd('\\') + '\\';
+            _solutionFullPath = _dte?.Solution?.FullName ?? string.Empty;
+            _solutionDir = Path.GetDirectoryName(_solutionFullPath)?.TrimEnd('\\') + '\\';
 
             General.Saved += OnSettingsSaved;
             AddFolderCommand.AddFolderRequest += OnAddFolderRequested;
@@ -236,35 +239,51 @@ namespace WorkspaceFiles
                 return;
             }
 
-            if (!_dte.Solution.Globals.VariableExists["FileExplorer"])
+            var settingsFilePath = WorkspaceSettingsService.GetSettingsFilePath(_solutionFullPath);
+            IReadOnlyList<string> folders = WorkspaceSettingsService.LoadFolders(settingsFilePath);
+
+            if (folders == null)
             {
-                if (TryGetGitRepoRoot(out DirectoryInfo dir))
+                if (_dte.Solution.Globals.VariableExists["FileExplorer"])
                 {
-                    _directories.Add(dir);
+                    // Migrate from legacy .suo-based storage to the JSON settings file
+                    var globalsValue = _dte.Solution.Globals["FileExplorer"].ToString();
+                    folders = WorkspaceSettingsService.MigrateFromGlobals(globalsValue);
+                    WorkspaceSettingsService.SaveFolders(settingsFilePath, folders);
+
+                    // Remove the globals entry so it no longer persists in the .suo file
+                    _dte.Solution.Globals.VariablePersists["FileExplorer"] = false;
                 }
                 else
                 {
-                    _directories.Add(new(_solutionDir));
+                    // No settings anywhere — default to the Git repository root or solution directory
+                    if (TryGetGitRepoRoot(out DirectoryInfo defaultDir))
+                    {
+                        _directories.Add(defaultDir);
+                    }
+                    else
+                    {
+                        _directories.Add(new(_solutionDir));
+                    }
+
+                    return;
                 }
             }
-            else
-            {
-                var dirs = _dte.Solution.Globals["FileExplorer"].ToString().Split('|');
 
-                foreach (var dir in dirs)
+            foreach (var dir in folders)
+            {
+                try
                 {
-                    try
+                    var info = new DirectoryInfo(Path.Combine(_solutionDir, dir));
+
+                    if (info.Exists)
                     {
-                        var info = new DirectoryInfo(Path.Combine(_solutionDir, dir));
-                        if (info.Exists)
-                        {
-                            _directories.Add(info);
-                        }
+                        _directories.Add(info);
                     }
-                    catch (Exception ex)
-                    {
-                        ex.Log();
-                    }
+                }
+                catch (Exception ex)
+                {
+                    ex.Log();
                 }
             }
         }
@@ -289,10 +308,9 @@ namespace WorkspaceFiles
         {
             try
             {
-                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                var raw = string.Join("|", _directories.Select(d => PackageUtilities.MakeRelative(_solutionDir, d.FullName)));
-                _dte.Solution.Globals["FileExplorer"] = raw;
-                _dte.Solution.Globals.VariablePersists["FileExplorer"] = _directories.Any();
+                var settingsFilePath = WorkspaceSettingsService.GetSettingsFilePath(_solutionFullPath);
+                var relativePaths = _directories.Select(d => PackageUtilities.MakeRelative(_solutionDir, d.FullName));
+                WorkspaceSettingsService.SaveFolders(settingsFilePath, relativePaths);
             }
             catch (Exception ex)
             {

@@ -83,6 +83,7 @@
     <Compile Include="Relationships.cs" />
     <Compile Include="MEF\WorkspaceItemInvocationController.cs" />
     <Compile Include="Services\GitStatusService.cs" />
+    <Compile Include="Services\WorkspaceSettingsService.cs" />
     <Compile Include="WorkspaceFilesPackage.cs" />
     <Compile Include="source.extension.cs">
       <AutoGen>True</AutoGen>
@@ -142,6 +143,7 @@
     <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing">
       <Version>10.0.2</Version>
     </PackageReference>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
     <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.14.2120">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
