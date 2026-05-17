@@ -41,7 +41,7 @@ jobs:
 
     - name: Increment VSIX version
       id: vsix_version
-      uses: madskristensen/vsix-version-stamp@2
+      uses: madskristensen/vsix-version-stamp@v2
       with:
         manifest-file: ${{ env.VsixManifestPath }}
         vsix-token-source-file: ${{ env.VsixManifestSourcePath }}
