@@ -91,7 +91,7 @@ jobs:
 
       - name: Publish extension to Marketplace
         if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]') }}
-        uses: madskristensen/publish-marketplace@2
+        uses: madskristensen/publish-marketplace@v2
         with:
           extension-file: '${{ github.event.repository.name }}.vsix'
           publish-manifest-file: 'vs-publish.json'
