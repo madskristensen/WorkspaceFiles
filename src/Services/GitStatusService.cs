@@ -247,19 +247,7 @@ namespace WorkspaceFiles.Services
 
         private static string FindGitRoot(string path)
         {
-            var current = Directory.Exists(path) ? path : Path.GetDirectoryName(path);
-
-            while (!string.IsNullOrEmpty(current))
-            {
-                if (Directory.Exists(Path.Combine(current, ".git")))
-                {
-                    return current;
-                }
-
-                current = Path.GetDirectoryName(current);
-            }
-
-            return null;
+            return GitRepositoryDetector.TryFindGitRoot(path, out var repoRoot) ? repoRoot : null;
         }
 
         private static bool IsRefreshRequired(string repoRoot)

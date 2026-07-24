@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Community.VisualStudio.VSCT" Version="16.0.29.6" />
+    <PackageVersion Include="Community.VisualStudio.Toolkit.17" Version="17.0.549" />
+    <PackageVersion Include="MAB.DotIgnore" Version="3.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.FileSystemGlobbing" Version="10.0.2" />
+    <PackageVersion Include="Microsoft.VSSDK.BuildTools" Version="17.14.2120" />
+    <PackageVersion Include="MSTest" Version="3.5.2" />
+  </ItemGroup>
+</Project>

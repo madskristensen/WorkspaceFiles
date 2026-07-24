@@ -1,12 +1,12 @@
+using EnvDTE;
+using EnvDTE80;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using EnvDTE;
-using EnvDTE80;
 using DteProject = EnvDTE.Project;
-using DteSolutionFolder = EnvDTE80.SolutionFolder;
 using DteSolution = EnvDTE.Solution;
+using DteSolutionFolder = EnvDTE80.SolutionFolder;
 
 namespace WorkspaceFiles
 {
@@ -70,7 +70,11 @@ namespace WorkspaceFiles
             ThreadHelper.ThrowIfNotOnUIThread();
 
             DteProject existing = EnumerateProjects(solution)
-                .FirstOrDefault(p => IsSolutionFolderProject(p) && string.Equals(p.Name, folderName, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(p =>
+                {
+                    ThreadHelper.ThrowIfNotOnUIThread();
+                    return IsSolutionFolderProject(p) && string.Equals(p.Name, folderName, StringComparison.OrdinalIgnoreCase);
+                });
 
             var solution2 = (Solution2)solution;
             return existing ?? solution2.AddSolutionFolder(folderName);

@@ -348,9 +348,10 @@ namespace WorkspaceFiles
 
             while (currentRoot != null && depth < maxDepth)
             {
-                var dotGit = Path.Combine(currentRoot.FullName, ".git");
-
-                if (Directory.Exists(dotGit))
+                // A Git root can be marked by either a .git directory (main worktree)
+                // or a .git file (linked worktree). See GitRepositoryDetector docs
+                // and https://git-scm.com/docs/git-worktree#_details.
+                if (GitRepositoryDetector.HasGitMarker(currentRoot.FullName))
                 {
                     solRoot = currentRoot;
                     // Cache the result for future use

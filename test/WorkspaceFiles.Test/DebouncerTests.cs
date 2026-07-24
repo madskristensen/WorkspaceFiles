@@ -9,7 +9,7 @@ namespace WorkspaceFiles.Test
     public class DebouncerTests
     {
         [TestMethod]
-        public async Task WhenDebounceIsCalledRepeatedlyThenOnlyLastActionRuns()
+        public async Task WhenDebounceIsCalledRepeatedlyThenOnlyLastActionRunsAsync()
         {
             var key = Guid.NewGuid().ToString("N");
             var invocationCount = 0;
@@ -23,7 +23,7 @@ namespace WorkspaceFiles.Test
         }
 
         [TestMethod]
-        public async Task WhenDebounceUsesDifferentKeysThenBothActionsRun()
+        public async Task WhenDebounceUsesDifferentKeysThenBothActionsRunAsync()
         {
             var firstKey = Guid.NewGuid().ToString("N");
             var secondKey = Guid.NewGuid().ToString("N");
@@ -38,7 +38,7 @@ namespace WorkspaceFiles.Test
         }
 
         [TestMethod]
-        public async Task WhenDebounceIsCalledAfterExecutionThenActionRunsAgain()
+        public async Task WhenDebounceIsCalledAfterExecutionThenActionRunsAgainAsync()
         {
             var key = Guid.NewGuid().ToString("N");
             var invocationCount = 0;

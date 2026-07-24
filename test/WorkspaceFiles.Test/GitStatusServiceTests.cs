@@ -122,6 +122,51 @@ namespace WorkspaceFiles.Test
             Assert.AreEqual(0, GetRepoLastRefreshCount());
         }
 
+        [TestMethod]
+        public void WhenRepoContainsGitDirectoryThenTryFindGitRootReturnsRepoRoot()
+        {
+            var repoRoot = CreateTempDirectory();
+            var nestedDirectory = Directory.CreateDirectory(Path.Combine(repoRoot, "src", "nested"));
+            Directory.CreateDirectory(Path.Combine(repoRoot, ".git"));
+
+            var found = GitRepositoryDetector.TryFindGitRoot(nestedDirectory.FullName, out var resolvedRoot);
+
+            Assert.IsTrue(found);
+            Assert.AreEqual(Path.GetFullPath(repoRoot), Path.GetFullPath(resolvedRoot));
+        }
+
+        [TestMethod]
+        public void WhenRepoContainsGitFileThenTryFindGitRootReturnsRepoRoot()
+        {
+            var repoRoot = CreateTempDirectory();
+            var nestedDirectory = Directory.CreateDirectory(Path.Combine(repoRoot, "worktrees", "dev"));
+            File.WriteAllText(Path.Combine(repoRoot, ".git"), "gitdir: D:/repo/.git/worktrees/dev");
+
+            var found = GitRepositoryDetector.TryFindGitRoot(nestedDirectory.FullName, out var resolvedRoot);
+
+            Assert.IsTrue(found);
+            Assert.AreEqual(Path.GetFullPath(repoRoot), Path.GetFullPath(resolvedRoot));
+        }
+
+        [TestMethod]
+        public void WhenRepoMarkerIsMissingThenTryFindGitRootReturnsFalse()
+        {
+            var rootDirectory = CreateTempDirectory();
+            var nestedDirectory = Directory.CreateDirectory(Path.Combine(rootDirectory, "a", "b"));
+
+            var found = GitRepositoryDetector.TryFindGitRoot(nestedDirectory.FullName, out var resolvedRoot);
+
+            Assert.IsFalse(found);
+            Assert.IsNull(resolvedRoot);
+        }
+
+        private static string CreateTempDirectory()
+        {
+            var path = Path.Combine(Path.GetTempPath(), "WorkspaceFilesTests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(path);
+            return path;
+        }
+
         private static void SeedStatusCache(string filePath, GitFileStatus status)
         {
             var serviceType = typeof(GitStatusService);
