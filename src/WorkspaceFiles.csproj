@@ -85,6 +85,7 @@
     <Compile Include="MEF\WorkspaceItemInvocationController.cs" />
     <Compile Include="Services\GitRepositoryDetector.cs" />
     <Compile Include="Services\GitStatusService.cs" />
+    <Compile Include="Services\WorkspaceSettingsService.cs" />
     <Compile Include="WorkspaceFilesPackage.cs" />
     <Compile Include="source.extension.cs">
       <AutoGen>True</AutoGen>
@@ -135,13 +136,14 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Community.VisualStudio.VSCT" PrivateAssets="all" />
-    <PackageReference Include="Community.VisualStudio.Toolkit.17"/>
+    <PackageReference Include="Community.VisualStudio.Toolkit.17" />
     <PackageReference Include="MAB.DotIgnore" />
     <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" />
     <PackageReference Include="Microsoft.VSSDK.BuildTools">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != ''" />
