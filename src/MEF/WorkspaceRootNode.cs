@@ -79,7 +79,18 @@ namespace WorkspaceFiles
 
         private void OnSettingsSaved(General general)
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
+            RefreshSettingsAsync().FireAndForget();
+        }
+
+        private async Task RefreshSettingsAsync()
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            if (_disposed)
+            {
+                return;
+            }
+
             SetupGlobbingMatcher();
             UpdateDirectories();
             BuildInnerItems();
