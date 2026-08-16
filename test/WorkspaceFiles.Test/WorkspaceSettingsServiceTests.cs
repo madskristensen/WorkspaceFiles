@@ -90,6 +90,18 @@ namespace WorkspaceFiles.Test
             Assert.AreEqual(0, result.Count);
         }
 
+        [TestMethod]
+        public void WhenSettingsFileHasMalformedJsonThenLoadFoldersReturnsEmptyList()
+        {
+            var path = Path.Combine(_tempDir, "malformed.wsfiles.json");
+            File.WriteAllText(path, "o");
+
+            var result = WorkspaceSettingsService.LoadFolders(path);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(0, result.Count);
+        }
+
         #endregion
 
         #region SaveFolders
