@@ -21,6 +21,16 @@ namespace WorkspaceFiles
         /// </summary>
         public static IReadOnlyList<WorkspaceItemNode> CurrentItems => _currentItems;
 
+        /// <summary>
+        /// Updates the live selection. Called by <see cref="Services.WorkspaceItemSelectionTracker"/>
+        /// whenever the Solution Explorer selection changes, so that <see cref="CurrentItems"/> reflects
+        /// the real current selection and isn't limited to the last time the context menu was shown.
+        /// </summary>
+        internal static void SetCurrentItems(IReadOnlyList<WorkspaceItemNode> items)
+        {
+            _currentItems = items ?? [];
+        }
+
         public bool ShowContextMenu(IEnumerable<object> items, Point location)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
