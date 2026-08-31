@@ -20,7 +20,10 @@ namespace WorkspaceFiles.Services
         private sealed class SettingsJson
         {
             [JsonPropertyName("folders")]
-            public List<string> Folders { get; set; }
+            public List<string> Folders
+            {
+                get; set;
+            }
         }
 
         /// <summary>
@@ -37,8 +40,8 @@ namespace WorkspaceFiles.Services
 
         /// <summary>
         /// Loads workspace folder paths from the settings JSON file.
-        /// Returns <c>null</c> if the file does not exist.
-        /// Returns an empty list if the file exists but contains no folders.
+        /// Returns <c>null</c> if the file does not exist - Migration path.
+        /// Returns an empty list if the file exists but contains no folders or if the JSON is malformed.
         /// </summary>
         public static IReadOnlyList<string> LoadFolders(string settingsFilePath)
         {
@@ -48,8 +51,16 @@ namespace WorkspaceFiles.Services
             }
 
             var json = File.ReadAllText(settingsFilePath);
-            SettingsJson settings = JsonSerializer.Deserialize<SettingsJson>(json, _readOptions);
-            return settings?.Folders ?? [];
+
+            try
+            {
+                SettingsJson settings = JsonSerializer.Deserialize<SettingsJson>(json, _readOptions);
+                return settings?.Folders ?? [];
+            }
+            catch (JsonException)
+            {
+                return [];
+            }
         }
 
         /// <summary>
