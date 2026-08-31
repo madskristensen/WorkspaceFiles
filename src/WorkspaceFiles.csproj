@@ -85,6 +85,8 @@
     <Compile Include="MEF\WorkspaceItemInvocationController.cs" />
     <Compile Include="Services\GitRepositoryDetector.cs" />
     <Compile Include="Services\GitStatusService.cs" />
+    <Compile Include="Services\AddNewItemCommandInterceptor.cs" />
+    <Compile Include="Services\WorkspaceItemSelectionTracker.cs" />
     <Compile Include="Services\WorkspaceSettingsService.cs" />
     <Compile Include="WorkspaceFilesPackage.cs" />
     <Compile Include="source.extension.cs">
