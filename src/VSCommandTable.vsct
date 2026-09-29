@@ -224,6 +224,17 @@
         </Strings>
       </Button>
 
+      <Button guid="WorkspaceFiles" id="ViewHistory" priority="0x0140" type="Button">
+        <Parent guid="WorkspaceFiles" id="FileContextMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="History" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>View &amp;History</ButtonText>
+          <LocCanonicalName>.FileExplorer.ViewHistory</LocCanonicalName>
+        </Strings>
+      </Button>
+
     </Buttons>
   </Commands>
 
@@ -305,6 +316,7 @@
       <IDSymbol name="ConvertToSolutionFolder" value="0x1005" />
       <IDSymbol name="Refresh" value="0x1006" />
       <IDSymbol name="ExecuteFile" value="0x1007" />
+      <IDSymbol name="ViewHistory" value="0x1008" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>
