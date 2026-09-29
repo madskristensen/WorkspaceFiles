@@ -52,5 +52,6 @@ namespace WorkspaceFiles
         public const int ConvertToSolutionFolder = 0x1005;
         public const int Refresh = 0x1006;
         public const int ExecuteFile = 0x1007;
+        public const int ViewHistory = 0x1008;
     }
 }
